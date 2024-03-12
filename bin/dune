@@ -1,0 +1,4 @@
+(executable
+ (public_name quadtree)
+ (name main)
+ (libraries quadtree))

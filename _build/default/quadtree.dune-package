@@ -1,0 +1,68 @@
+(lang dune 3.14)
+(name quadtree)
+(sections (lib .) (libexec .) (bin ../../bin))
+(files
+ (lib
+  (META
+   box.cmi
+   box.cmt
+   box.cmti
+   box.cmx
+   box.ml
+   box.mli
+   dune-package
+   lib.cmi
+   lib.cmt
+   lib.cmx
+   lib.ml
+   opam
+   point.cmi
+   point.cmt
+   point.cmti
+   point.cmx
+   point.ml
+   point.mli
+   quadtree.a
+   quadtree.cma
+   quadtree.cmxa
+   tree.cmi
+   tree.cmt
+   tree.cmti
+   tree.cmx
+   tree.ml
+   tree.mli
+   tree_intf.cmi
+   tree_intf.cmt
+   tree_intf.cmx
+   tree_intf.ml))
+ (libexec (quadtree.cmxs))
+ (bin (quadtree)))
+(library
+ (name quadtree)
+ (kind normal)
+ (archives (byte quadtree.cma) (native quadtree.cmxa))
+ (plugins (byte quadtree.cma) (native quadtree.cmxs))
+ (native_archives quadtree.a)
+ (modes byte native)
+ (modules
+  (unwrapped
+   (module
+    (obj_name box)
+    (visibility public)
+    (source (path Box) (intf (path box.mli)) (impl (path box.ml))))
+   (module
+    (obj_name lib)
+    (visibility public)
+    (source (path Lib) (impl (path lib.ml))))
+   (module
+    (obj_name point)
+    (visibility public)
+    (source (path Point) (intf (path point.mli)) (impl (path point.ml))))
+   (module
+    (obj_name tree)
+    (visibility public)
+    (source (path Tree) (intf (path tree.mli)) (impl (path tree.ml))))
+   (module
+    (obj_name tree_intf)
+    (visibility public)
+    (source (path Tree_intf) (impl (path tree_intf.ml)))))))

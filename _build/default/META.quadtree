@@ -1,0 +1,6 @@
+description = ""
+requires = ""
+archive(byte) = "quadtree.cma"
+archive(native) = "quadtree.cmxa"
+plugin(byte) = "quadtree.cma"
+plugin(native) = "quadtree.cmxs"

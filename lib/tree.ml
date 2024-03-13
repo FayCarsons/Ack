@@ -9,7 +9,7 @@ module MakePoint = Point.Make2D
 
 let ( >> ) f g x = g @@ f x
 
-module Make (Num : Scalar) (E : Element with type n = Num.t) :
+module Quadtree (Num : Scalar) (E : Element with type n = Num.t) :
   Quadtree with type elt = E.t and type n = Num.t = struct
   module Point = MakePoint (Num)
 

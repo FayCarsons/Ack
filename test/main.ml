@@ -2,7 +2,7 @@ open OUnit2
 module Quadtree = Quadtree.Lib
 
 module Q =
-  Quadtree.T
+  Quadtree.Quadtree
     (Int)
     (struct
       type n = Int.t

@@ -75,11 +75,18 @@ module type Box3D = sig
   val intersects : t -> t -> bool
 end
 
-module type Element = sig
+module type Element2D = sig
   type t
   type n
 
   val position : t -> n * n
+end
+
+module type Element3D = sig
+  type t
+  type n
+
+  val position : t -> n * n * n
 end
 
 module type Quadtree = sig
@@ -87,6 +94,29 @@ module type Quadtree = sig
 
   module Point : Point2D with type n = n
   module Box : Box2D with type n = n and type point = Point.t
+
+  type elt
+  type t
+
+  val empty : Box.t -> int -> t
+  val load : t -> elt list -> t
+  val insert : t -> elt -> t
+  val size : t -> int
+  val remove : t -> elt -> t
+  val find : (elt -> bool) -> t -> elt option
+  val range : Box.t -> t -> elt list
+  val nearest : t -> Point.t -> elt option
+  val map : (elt -> elt) -> t -> t
+  val iter : (elt -> unit) -> t -> unit
+  val filter : (elt -> bool) -> t -> t
+  val filter_map : (elt -> elt option) -> t -> t
+end
+
+module type Octree = sig
+  type n
+
+  module Point : Point3D with type n = n
+  module Box : Box3D with type n = n and type point = Point.t
 
   type elt
   type t

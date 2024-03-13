@@ -1,4 +1,5 @@
-module type Element = Tree_intf.Element
+module type Element2D = Tree_intf.Element2D
+module type Element3D = Tree_intf.Element3D
 
-module Quadtree (N : Tree_intf.Scalar) (E : Element with type n = N.t) :
+module Quadtree (N : Tree_intf.Scalar) (E : Element2D with type n = N.t) :
   Tree_intf.Quadtree with type n = N.t and type elt = E.t

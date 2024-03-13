@@ -1,3 +1,4 @@
 module Quadtree = Tree.Quadtree
 
-module type Element = Tree_intf.Element
+module type Element2D = Tree_intf.Element2D
+module type Element3D = Tree_intf.Element3D

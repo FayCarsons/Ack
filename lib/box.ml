@@ -34,7 +34,7 @@ module Make2D (Num : Scalar) (Point : Point2D) :
   let intersects a b =
     let open Point in
     let overlap (min_a : n) (max_a : n) (min_b : n) (max_b : n) =
-      (not @@ (max_a < min_b)) && max_b < min_a
+      not (max_a < min_b || max_b < min_a)
     in
     overlap a.min.x a.max.x b.min.x b.max.x
     && overlap a.min.y a.max.y b.min.y b.max.y
@@ -93,8 +93,9 @@ module Make3D (Num : Scalar) (Point : Point3D with type n = Num.t) :
     && in_range (min.z, max.z) z
 
   let intersects a b =
+    let open Point in
     let overlap (min_a : n) (max_a : n) (min_b : n) (max_b : n) =
-      not @@ (max_a < min_b || max_b < min_a)
+      not (max_a < min_b || max_b < min_a)
     in
     overlap a.min.x a.max.x b.min.x b.max.x
     && overlap a.min.y a.max.y b.min.y b.max.y

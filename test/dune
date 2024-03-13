@@ -1,2 +1,4 @@
 (test
- (name test_quadtree))
+ (name main)
+ (modules main)
+ (libraries ounit quadtree))

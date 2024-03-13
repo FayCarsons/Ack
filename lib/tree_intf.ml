@@ -83,16 +83,18 @@ module type Element = sig
 end
 
 module type Quadtree = sig
-  module Point : Point2D
-  module Box : Box2D
+  type n
+
+  module Point : Point2D with type n = n
+  module Box : Box2D with type n = n and type point = Point.t
 
   type elt
-  type n
   type t
 
   val empty : Box.t -> int -> t
   val load : t -> elt list -> t
   val insert : t -> elt -> t
+  val size : t -> int
   val remove : t -> elt -> t
   val find : (elt -> bool) -> t -> elt option
   val range : Box.t -> t -> elt list

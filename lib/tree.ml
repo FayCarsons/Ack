@@ -71,6 +71,14 @@ module Make (Num : Scalar) (E : Element with type n = Num.t) :
     in
     { t with tree = insert' tree }
 
+  let size t =
+    let rec aux n = function
+      | Node (_, ns) -> n + (List.map (aux 0) ns |> List.fold_left ( + ) 0)
+      | Leaf (_, es) -> List.length es
+      | Empty _ -> 0
+    in
+    aux 0 t.tree
+
   let remove t elt =
     let pos = position elt in
     let rec remove' = function
@@ -111,10 +119,9 @@ module Make (Num : Scalar) (E : Element with type n = Num.t) :
     let rec range' = function
       | Node (box, ns) when Box.intersects box range ->
           List.concat_map range' ns
-      | Node _ -> []
-      | Leaf (box, _) when not @@ Box.intersects box range -> []
-      | Leaf (_, es) -> List.filter (position >> Box.contains range) es
-      | Empty _ -> []
+      | Leaf (_, es) ->
+          List.filter (fun e -> position e |> Box.contains range) es
+      | _ -> []
     in
     range' t.tree
 
@@ -164,7 +171,9 @@ module Make (Num : Scalar) (E : Element with type n = Num.t) :
                 compare (distance (position e1) pt) (distance (position e2) pt))
               es
           in
-          map_while Option.some sorted
+          map_while
+            (fun elt' -> if position elt' <> pt then Some elt' else None)
+            sorted
       | Empty _ -> None
     in
     search t.tree

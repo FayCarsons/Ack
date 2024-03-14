@@ -1,11 +1,17 @@
 open OUnit2
 module Quadtree = Quadtree.Lib
 
+module Num = struct
+  include Int
+
+  let sqrt n = float_of_int n |> sqrt
+end
+
 module Q =
   Quadtree.Quadtree
-    (Int)
+    (Num)
     (struct
-      type n = Int.t
+      type n = Num.t
       type t = n * n
 
       let position = Fun.id
@@ -43,17 +49,23 @@ let test_contains _ =
 
 (* Test size of tree *)
 let test_size _ =
-  let es = rand_es 8 100 in
-  let empty = Q.empty test_domain 4 in
-  let t = Q.load empty es in
-  assert_equal (Q.size t) 8
+  let size = 8 in
+  let es = rand_es size 100 in
+  let t = Q.load (Q.empty test_domain 4) es in
+  assert_equal (Q.size t) size
 
 (* Test loading a lot of elements -- TODO optimize `Q.load` *)
 let test_load_many _ =
-  let es = rand_es 1000 100 in
-  let empty = Q.empty test_domain 4 in
-  let t = Q.load empty es in
-  assert_equal (Q.size t) 1000
+  let size = 100_000 in
+  let es = rand_es size 100 in
+  let t = Q.load (Q.empty test_domain 64) es in
+  assert_equal (Q.size t) size
+
+let test_load_lots _ =
+  let size = 1_000_000 in
+  let es = rand_es size 100 in
+  let t = Q.load (Q.empty test_domain 256) es in
+  assert_equal (Q.size t) size
 
 (* Test inserting a single elt *)
 let test_insert _ =
@@ -74,7 +86,7 @@ let test_remove _ =
 
 (* Test finding a single elt *)
 let test_find _ =
-  let not_target_range = 89 in
+  let not_target_range = 90 in
   let es = rand_es 10 not_target_range in
   let target_elt = (95, 95) in
   let empty = Q.empty test_domain 4 in
@@ -106,7 +118,7 @@ let test_map _ =
   let es = List.init 10 tuple_splat in
   let empty = Q.empty test_domain 4 in
   let t = Q.load empty es in
-  let t = Q.map (fun e -> (succ @@ fst e, succ @@ snd e)) t in
+  let t = Q.map (fun e -> (succ @@ snd e, succ @@ snd e)) t in
   Q.iter (fun i -> assert (1 <= fst i && fst i <= 10)) t
 
 (* Test iterating over elts *)
@@ -129,7 +141,7 @@ let test_filter_map _ =
   let t = Q.load (Q.empty test_domain 4) es in
   let t =
     Q.filter_map
-      (function pair when fst pair mod 2 == 0 -> Some pair | _ -> None)
+      (function pair when is_even @@ fst pair -> Some pair | _ -> None)
       t
   in
   Q.iter (fst >> is_even >> assert') t
@@ -140,7 +152,8 @@ let qt_suite =
          "Test Box.intersects" >:: test_intersects;
          "Test Box.contains" >:: test_contains;
          "Test Quadtree.load && Quadtree.size" >:: test_size;
-         "Test Quadtree.load w/ 1,000 elts" >:: test_load_many;
+         "Test Quadtree.load w/ 100,000 elts" >:: test_load_many;
+         "Test Quadtree.load w/ 1,000,000 elts" >:: test_load_lots;
          "Test insert" >:: test_insert;
          "Test remove" >:: test_remove;
          "Test find" >:: test_find;

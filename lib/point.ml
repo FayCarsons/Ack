@@ -9,11 +9,17 @@ module Make2D (Num : Scalar) : Point2D with type n = Num.t = struct
   let splat x = point x x
   let map f { x; y } = point (f x) (f y)
   let map2 f { x; y } { x = x'; y = y' } = point (f x x') (f y y')
+  let fold f acc { x; y } = f (f acc x) y
 
   let iter f { x; y } =
     f x;
     f y;
     ()
+
+  let distance p1 p2 =
+    map2 Num.sub p1 p2
+    |> map (fun n -> Num.mul n n)
+    |> fold Num.add Num.zero |> Num.sqrt
 
   let to_tuple { x; y } = (x, y)
 
@@ -42,6 +48,13 @@ module Make3D (Num : Scalar) : Point3D with type n = Num.t = struct
 
   let map2 f { x; y; z } { x = x'; y = y'; z = z' } =
     point (f x x') (f y y') (f z z')
+
+  let fold f acc { x; y; z } = f (f (f acc x) y) z
+
+  let distance p1 p2 =
+    map2 Num.sub p1 p2
+    |> map (fun n -> Num.mul n n)
+    |> fold Num.add Num.zero |> Num.sqrt
 
   let iter f { x; y; z } =
     f x;

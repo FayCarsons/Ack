@@ -148,11 +148,6 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
       | Leaf (box, _) -> box
       | Empty box -> box
     in
-    let distance ({ x; y } : Point.t) ({ x = x'; y = y' } : Point.t) =
-      let dx = Num.sub x x' in
-      let dy = Num.sub y y' in
-      Num.add (Num.mul dx dx) (Num.mul dy dy)
-    in
     let rec map_while f = function
       | x :: xs ->
           let res = f x in
@@ -165,8 +160,8 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
             List.fast_sort
               (fun n1 n2 ->
                 compare
-                  (distance (Box.midpoint @@ get_box n1) pt)
-                  (distance (Box.midpoint @@ get_box n2) pt))
+                  (Point.distance (Box.midpoint @@ get_box n1) pt)
+                  (Point.distance (Box.midpoint @@ get_box n2) pt))
               ns
           in
           map_while search sorted
@@ -174,7 +169,9 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
           let sorted =
             List.fast_sort
               (fun e1 e2 ->
-                compare (distance (position e1) pt) (distance (position e2) pt))
+                compare
+                  (Point.distance (position e1) pt)
+                  (Point.distance (position e2) pt))
               es
           in
           map_while
@@ -370,13 +367,6 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
       | Leaf (box, _) -> box
       | Empty box -> box
     in
-    let distance ({ x; y; z } : Point.t) ({ x = x'; y = y'; z = z' } : Point.t)
-        =
-      let dx = Num.sub x x' in
-      let dy = Num.sub y y' in
-      let dz = Num.sub z z' in
-      Num.add (Num.mul dx dx) @@ Num.add (Num.mul dy dy) (Num.mul dz dz)
-    in
     let rec map_while f = function
       | x :: xs ->
           let res = f x in
@@ -389,8 +379,8 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
             List.fast_sort
               (fun n1 n2 ->
                 compare
-                  (distance (Box.midpoint @@ get_box n1) pt)
-                  (distance (Box.midpoint @@ get_box n2) pt))
+                  (Point.distance (Box.midpoint @@ get_box n1) pt)
+                  (Point.distance (Box.midpoint @@ get_box n2) pt))
               ns
           in
           map_while search sorted
@@ -398,7 +388,9 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
           let sorted =
             List.fast_sort
               (fun e1 e2 ->
-                compare (distance (position e1) pt) (distance (position e2) pt))
+                compare
+                  (Point.distance (position e1) pt)
+                  (Point.distance (position e2) pt))
               es
           in
           map_while

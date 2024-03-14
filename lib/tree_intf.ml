@@ -1,12 +1,14 @@
 module type Scalar = sig
   type t
 
+  val zero : t
   val one : t
   val succ : t -> t
   val add : t -> t -> t
   val sub : t -> t -> t
   val mul : t -> t -> t
   val div : t -> t -> t
+  val sqrt : t -> float
 end
 
 module type Point2D = sig
@@ -18,6 +20,8 @@ module type Point2D = sig
   val splat : n -> t
   val map : (n -> n) -> t -> t
   val map2 : (n -> n -> n) -> t -> t -> t
+  val fold : ('acc -> n -> 'acc) -> 'acc -> t -> 'acc
+  val distance : t -> t -> float
   val iter : (n -> unit) -> t -> unit
   val to_tuple : t -> n * n
   val ( +~ ) : t -> t -> t
@@ -39,6 +43,7 @@ module type Point3D = sig
   val splat : n -> t
   val map : (n -> n) -> t -> t
   val map2 : (n -> n -> n) -> t -> t -> t
+  val distance : t -> t -> float
   val iter : (n -> unit) -> t -> unit
   val to_tuple : t -> n * n * n
   val ( +~ ) : t -> t -> t

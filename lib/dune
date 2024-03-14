@@ -1,3 +1,4 @@
 (library
  (name quadtree)
- (public_name quadtree))
+ (public_name quadtree)
+ (libraries iter))

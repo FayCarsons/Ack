@@ -19,7 +19,7 @@
  (name quadtree)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune ounit)
+ (depends ocaml dune ounit iter)
  (tags
   (topics "to describe" your project)))
 

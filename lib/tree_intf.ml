@@ -81,6 +81,12 @@ module type Element3D = sig
   val position : t -> n * n * n
 end
 
+module type ElementN = sig
+  type t
+
+  val position : t -> floatarray
+end
+
 module type Quadtree = sig
   type n
 
@@ -125,4 +131,13 @@ module type Octree = sig
   val iter : (elt -> unit) -> t -> unit
   val filter : (elt -> bool) -> t -> t
   val filter_map : (elt -> elt option) -> t -> t
+end
+
+module type KDTree = sig
+  type t
+  type elt
+
+  val empty : int -> int -> t
+  val load : t -> elt list -> t
+  val insert : t -> elt -> t
 end

@@ -1,12 +1,4 @@
-module type Scalar = Tree_intf.Scalar
-module type Element2D = Tree_intf.Element2D
-module type Element3D = Tree_intf.Element3D
-module type Box = Tree_intf.Box
-module type Point = Tree_intf.Point
-module type Point3D = Tree_intf.Point3D
-module type Quadtree = Tree_intf.Quadtree
-module type Octree = Tree_intf.Octree
-
+include Tree_intf
 module MakePoint = Point.Make
 module MakeRect = Box.Make
 module MakePoint3D = Point.Make3D
@@ -355,4 +347,69 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
       | Empty _ -> None
     in
     search t.tree
+end
+
+module KDTree (E : ElementN) : KDTree with type elt = E.t = struct
+  type elt = E.t
+  type tree = Node of elt * tree * tree | Leaf of elt list | Empty
+  type t = { capacity : int; dimensionality : int; tree : tree }
+
+  module FA = Float.Array
+
+  let leaf points = Leaf points
+
+  let compare_dim dim e1 e2 =
+    let p1, p2 = (E.position e1, E.position e2) in
+    FA.(compare (unsafe_get p1 dim) (unsafe_get p2 dim))
+
+  let empty capacity dimensionality = { capacity; dimensionality; tree = Empty }
+
+  let split idx lst =
+    let rec split' i lst before =
+      match lst with
+      | [] -> failwith "Index out of bounds"
+      | x :: xs ->
+          if i = 0 then (List.rev before, x, xs)
+          else split' (i - 1) xs (x :: before)
+    in
+    split' idx lst []
+
+  let load { capacity; dimensionality; tree = _empty } points =
+    let rec load' dimension = function
+      | [] -> Empty
+      | points when List.length points <= capacity -> Leaf points
+      | points ->
+          let sorted = List.fast_sort (compare_dim dimension) points in
+          let median = List.length points / 2 in
+          let left, node, right = split median sorted in
+          let next_dim = succ dimension mod dimensionality in
+          Node (node, load' next_dim left, load' next_dim right)
+    in
+    { capacity; dimensionality; tree = load' 0 points }
+
+  let insert ({ capacity; dimensionality; tree } as t) elt =
+    let pos = E.position elt in
+    let rec insert' depth = function
+      | Node (median, left, right) ->
+          let dimension = depth mod dimensionality in
+          let dir =
+            FA.unsafe_get pos dimension
+            < FA.unsafe_get (E.position median) dimension
+          in
+          if dir then Node (median, insert' (succ depth) left, right)
+          else Node (median, left, insert' (succ depth) right)
+      | Leaf children when List.length children < capacity ->
+          Leaf (elt :: children)
+      | Leaf points ->
+          let dimension = depth mod dimensionality in
+          let sorted = List.fast_sort (compare_dim dimension) (elt :: points) in
+          let median = List.length sorted / 2 in
+          let left, node, right = split median sorted in
+          Node
+            ( node,
+              insert' (succ depth) @@ leaf left,
+              insert' (succ depth) @@ leaf right )
+      | Empty -> Leaf [ elt ]
+    in
+    { t with tree = insert' 0 tree }
 end

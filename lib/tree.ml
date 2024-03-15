@@ -485,4 +485,12 @@ module KDTree (E : ElementN) : KDTree with type elt = E.t = struct
       | Empty -> 0
     in
     depth' t.tree
+
+  let size t =
+    let rec size' = function
+      | Node (_, left, right) -> succ @@ (size' left + size' right)
+      | Leaf elts -> List.length elts
+      | Empty -> 0
+    in
+    size' t.tree
 end

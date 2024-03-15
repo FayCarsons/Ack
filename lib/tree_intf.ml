@@ -100,6 +100,7 @@ module type Quadtree = sig
   val load : t -> elt list -> t
   val insert : t -> elt -> t
   val size : t -> int
+  val depth : t -> int
   val remove : t -> elt -> t
   val find : (elt -> bool) -> t -> elt option
   val range : Box.t -> t -> elt list
@@ -123,6 +124,7 @@ module type Octree = sig
   val load : t -> elt list -> t
   val insert : t -> elt -> t
   val size : t -> int
+  val depth : t -> int
   val remove : t -> elt -> t
   val find : (elt -> bool) -> t -> elt option
   val range : Box.t -> t -> elt list
@@ -140,4 +142,5 @@ module type KDTree = sig
   val empty : int -> int -> t
   val load : t -> elt list -> t
   val insert : t -> elt -> t
+  val nearest : t -> floatarray -> elt option
 end

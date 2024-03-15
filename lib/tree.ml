@@ -85,6 +85,14 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
     in
     aux 0 t.tree
 
+  let depth t =
+    let rec depth' n = function
+      | Node (_, ns) -> Array.map (depth' @@ succ n) ns |> Array.fold_left max n
+      | Leaf _ -> succ n
+      | Empty _ -> n
+    in
+    depth' 0 t.tree
+
   let remove t elt =
     let pos = position elt in
     let rec remove' = function
@@ -257,6 +265,14 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
     in
     aux 0 t.tree
 
+  let depth t =
+    let rec depth' n = function
+      | Node (_, ns) -> Array.map (depth' @@ succ n) ns |> Array.fold_left max n
+      | Leaf _ -> succ n
+      | Empty _ -> n
+    in
+    depth' 0 t.tree
+
   let remove t elt =
     let pos = position elt in
     let rec remove' = function
@@ -372,8 +388,8 @@ module KDTree (E : ElementN) : KDTree with type elt = E.t = struct
       match lst with
       | [] -> failwith "Index out of bounds"
       | x :: xs ->
-          if i = 0 then (List.rev before, x, xs)
-          else split' (i - 1) xs (x :: before)
+          if i == 0 then (List.rev before, x, xs)
+          else split' (pred i) xs (x :: before)
     in
     split' idx lst []
 

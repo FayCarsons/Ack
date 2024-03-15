@@ -152,8 +152,8 @@ let test_map _ =
   let op () =
     let es = List.init 1_000 tuple_splat in
     let t = Q.load (Q.empty test_domain 32) es in
-    let t = Q.map (fun e -> (succ @@ fst e, snd e)) t in
-    Q.iter (fun i -> assert (1 <= fst i && fst i <= 10)) t
+    let t = Q.map (fun (x, y) -> (succ x, succ y)) t in
+    Q.iter (fun i -> assert (1 <= fst i && fst i <= 1_000)) t
   in
   time ~label:"TEST MAP" ~fn:op
 
@@ -162,7 +162,7 @@ let test_iter _ =
   let op () =
     let es = List.init 1_000 tuple_splat in
     let t = Q.load (Q.empty test_domain 32) es in
-    Q.iter (fst >> (fun i -> 0 <= i && i <= 9) >> assert') t
+    Q.iter (fst >> (fun i -> 0 <= i && i <= 1_000) >> assert') t
   in
   time ~label:"TEST ITER" ~fn:op
 

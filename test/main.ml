@@ -24,7 +24,7 @@ let test_domain_max = 100
 let test_domain = Box.box (Point.splat 0) (Point.splat test_domain_max)
 (* Test box/domain, in range 0-100 *)
 
-let rand_es n max = Array.init n (fun _ -> (Random.int max, Random.int max))
+let rand_es n max = List.init n (fun _ -> (Random.int max, Random.int max))
 (* Random elt generator *)
 
 let tuple_splat n = (n, n)
@@ -104,7 +104,7 @@ let test_remove _ =
     let es = rand_es (pred target_size) 100 in
     let not_rand = (50, 50) in
     let empty = Q.empty test_domain 4 in
-    let t = Q.load empty @@ Array.concat [ [| not_rand |]; es ] in
+    let t = Q.load empty @@ (not_rand :: es) in
     assert_equal (Q.size t) target_size;
     let t = Q.remove t not_rand in
     assert_equal (Q.size t) (pred target_size)
@@ -118,7 +118,7 @@ let test_find _ =
     let es = rand_es 10 not_target_range in
     let target_elt = (95, 95) in
     let empty = Q.empty test_domain 4 in
-    let t = Q.load empty @@ Array.concat [ [| target_elt |]; es ] in
+    let t = Q.load empty @@ (target_elt :: es) in
     assert' @@ Option.is_some @@ Q.find (fun elt -> elt == target_elt) t
   in
   time ~label:"TEST FIND" ~fn:op
@@ -127,10 +127,10 @@ let test_find _ =
 let test_range _ =
   let op () =
     let range = Box.box (Point.splat 50) (Point.splat 100) in
-    let target_es = [| (80, 80); (90, 90) |] in
+    let target_es = [ (80, 80); (90, 90) ] in
     let es = rand_es 100 50 in
     let empty = Q.empty test_domain 4 in
-    let t = Q.load empty @@ Array.concat [ target_es; es ] in
+    let t = Q.load empty @@ target_es @ es in
     let result_es = Q.range range t in
     assert_equal (List.length result_es) 2
   in
@@ -142,7 +142,7 @@ let test_nearest _ =
     let es = rand_es 100 50 in
     let target, nearest = ((90, 90), (80, 80)) in
     let empty = Q.empty test_domain 4 in
-    let t = Q.load empty @@ Array.concat [ [| target; nearest |]; es ] in
+    let t = Q.load empty @@ (target :: nearest :: es) in
     let nearest' = Option.get @@ Q.nearest t @@ Point.splat (fst target) in
     assert_equal nearest nearest'
   in
@@ -151,7 +151,7 @@ let test_nearest _ =
 (* Test mapping over elts *)
 let test_map _ =
   let op () =
-    let es = Array.init 10 tuple_splat in
+    let es = List.init 10 tuple_splat in
     let empty = Q.empty test_domain 4 in
     let t = Q.load empty es in
     let t = Q.map (fun e -> (succ @@ snd e, succ @@ snd e)) t in
@@ -162,7 +162,7 @@ let test_map _ =
 (* Test iterating over elts *)
 let test_iter _ =
   let op () =
-    let es = Array.init 10 tuple_splat in
+    let es = List.init 10 tuple_splat in
     let t = Q.load (Q.empty test_domain 4) es in
     Q.iter (fst >> (fun i -> 0 <= i && i <= 9) >> assert') t
   in
@@ -171,7 +171,7 @@ let test_iter _ =
 (* Test filtering elts *)
 let test_filter _ =
   let op () =
-    let es = Array.init 10 tuple_splat in
+    let es = List.init 10 tuple_splat in
     let empty = Q.empty test_domain 4 in
     let t = Q.load empty es in
     let t = Q.filter (fst >> is_even) t in
@@ -182,7 +182,7 @@ let test_filter _ =
 (* Test filter_map-ing elts *)
 let test_filter_map _ =
   let op () =
-    let es = Array.init 10 tuple_splat in
+    let es = List.init 10 tuple_splat in
     let t = Q.load (Q.empty test_domain 4) es in
     let t =
       Q.filter_map

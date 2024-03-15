@@ -30,34 +30,30 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
 
   type tree =
     | Node of (Box.t * tree array)
-    | Leaf of (Box.t * E.t array)
+    | Leaf of (Box.t * E.t list)
     | Empty of Box.t
 
   type t = { capacity : int; tree : tree }
 
   let empty domain capacity = { capacity; tree = Empty domain }
 
-  let load ({ capacity; tree } as t) (elements : E.t array) =
+  let load ({ capacity; tree } as t) elements =
     let partition children elts =
       let partition' (leaves, elts_seq) box =
         let belong, dont_belong =
-          Seq.partition (position >> Box.contains box) elts_seq
+          List.partition (position >> Box.contains box) elts_seq
         in
-        let leaf = (box, Array.of_seq belong) in
-        (Iter.cons leaf leaves, dont_belong)
+        let leaf = (box, belong) in
+        (leaf :: leaves, dont_belong)
       in
-      let leaves, _ =
-        Iter.fold partition'
-          (Iter.empty, Array.to_seq elts)
-          (Iter.of_array children)
-      in
-      Iter.to_array leaves
+      let leaves, _ = Array.fold_left partition' ([], elts) children in
+      Array.of_list leaves
     in
     let rec load' (box', es') =
-      if Array.length es' >= capacity then
+      if List.length es' >= capacity then
         let quarters = Box.split box' in
-        let children = partition quarters es' in
-        Node (box', Array.map load' children)
+        let children' = partition quarters es' |> Array.map load' in
+        Node (box', children')
       else Leaf (box', es')
     in
     match tree with
@@ -67,32 +63,32 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
   let insert ({ capacity; tree } as t) elt =
     let pos = position elt in
     let rec insert' = function
-      | Leaf (box, es) when Array.length es < pred capacity ->
-          Leaf (box, Array.append es [| elt |])
+      | Leaf (box, es) when List.length es <= pred capacity ->
+          Leaf (box, elt :: es)
       | Leaf (box, es) ->
           let children = Box.split box in
-          let es' = Seq.init (Array.length es) (fun i -> es.(i)) in
+          let es' = Iter.of_list es in
           let leaves =
             Array.map
               (fun box' ->
                 Leaf
                   ( box',
-                    Array.of_seq
-                    @@ Seq.filter (position >> Box.contains box') es' ))
+                    Iter.to_list
+                    @@ Iter.filter (position >> Box.contains box') es' ))
               children
           in
           Node (box, leaves)
       | Node (box, _) as node' when not @@ Box.contains box pos -> node'
       | Node (box, ns) -> Node (box, Array.map insert' ns)
-      | Empty box -> Leaf (box, [| elt |])
+      | Empty box -> Leaf (box, [ elt ])
     in
     { t with tree = insert' tree }
 
   let size t =
     let rec aux n = function
       | Node (_, ns) ->
-          n + (Array.to_seq ns |> Seq.map (aux 0) |> Seq.fold_left ( + ) 0)
-      | Leaf (_, es) -> Array.length es
+          n + (Iter.of_array ns |> Iter.map (aux 0) |> Iter.fold ( + ) 0)
+      | Leaf (_, es) -> List.length es
       | Empty _ -> 0
     in
     aux 0 t.tree
@@ -105,19 +101,17 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
       | Leaf (box, es) when Box.contains box pos ->
           Leaf
             ( box,
-              Array.to_seq es
-              |> Seq.filter (fun elt' -> elt <> elt')
-              |> Array.of_seq )
+              Iter.of_list es
+              |> Iter.filter (fun elt' -> elt <> elt')
+              |> Iter.to_list )
       | t -> t
     in
     { t with tree = remove' t.tree }
 
-  let find (search : elt -> bool) { capacity = _; tree } : elt option =
+  let find search { capacity = _; tree } =
     let rec find' = function
-      | Node (_, ns) -> Iter.of_array ns |> Iter.find_map find'
-      | Leaf (_, es) ->
-          Iter.of_array es
-          |> Iter.find (function elt when search elt -> Some elt | _ -> None)
+      | Node (_, ns) -> Array.find_map find' ns
+      | Leaf (_, es) -> List.find_opt search es
       | Empty _ -> None
     in
     find' tree
@@ -127,9 +121,7 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
       | Node (box, ns) ->
           Array.map_inplace map' ns;
           Node (box, ns)
-      | Leaf (box, es) ->
-          Array.map_inplace f es;
-          Leaf (box, es)
+      | Leaf (box, es) -> Leaf (box, List.map f es)
       | t -> t
     in
     { t with tree = map' t.tree }
@@ -137,7 +129,7 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
   let iter f t =
     let rec iter' = function
       | Node (_, ns) -> Array.iter iter' ns
-      | Leaf (_, es) -> Array.iter f es
+      | Leaf (_, es) -> List.iter f es
       | Empty _ -> ()
     in
     iter' t.tree
@@ -147,25 +139,23 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
       | Node (box, ns) when Box.intersects box range ->
           Iter.(of_array ns |> map range' |> concat)
       | Leaf (box, es) when Box.intersects box range ->
-          let it = Iter.of_array es in
-          let filtered = Iter.filter (position >> Box.contains range) it in
-          filtered
+          Iter.of_list es |> Iter.filter (position >> Box.contains range)
       | _ -> Iter.empty
     in
     range' t.tree |> Iter.to_list
 
   let apply f t =
     let rec apply' = function
-      | Node (box, ns) -> Node (box, Array.map apply' ns)
+      | Node (box, ns) ->
+          Array.map_inplace apply' ns;
+          Node (box, ns)
       | Leaf (box, es) -> Leaf (box, f es)
-      | t -> t
+      | t' -> t'
     in
     { t with tree = apply' t.tree }
 
-  let filter f t = apply (Iter.of_array >> Iter.filter f >> Iter.to_array) t
-
-  let filter_map f t =
-    apply (Array.to_seq >> Seq.filter_map f >> Array.of_seq) t
+  let filter f t = apply (Iter.of_list >> Iter.filter f >> Iter.to_list) t
+  let filter_map f t = apply (List.to_seq >> Seq.filter_map f >> List.of_seq) t
 
   let nearest t pt =
     let get_box = function
@@ -182,13 +172,14 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
                    (Point.distance (Box.midpoint @@ get_box n2) pt))
           |> Iter.find_map search
       | Leaf (_, es) ->
-          Iter.of_array es
+          Iter.of_list es
           |> Iter.sort ~cmp:(fun e1 e2 ->
                  compare
                    (Point.distance (position e1) pt)
                    (Point.distance (position e2) pt))
-          |> Iter.find (fun elt' ->
-                 if position elt' <> pt then Some elt' else None)
+          |> Iter.find (function
+               | elt when position elt <> pt -> Some elt
+               | _ -> None)
       | Empty _ -> None
     in
     search t.tree
@@ -218,7 +209,7 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
 
   let empty domain capacity = { capacity; tree = Empty domain }
 
-  let load ({ capacity; tree } as t) (elements : E.t array) =
+  let load ({ capacity; tree } as t) elements =
     let partition children elts =
       let partition' (leaves, elts_seq) box =
         let belong, dont_belong =
@@ -228,17 +219,15 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
         (Iter.cons leaf leaves, dont_belong)
       in
       let leaves, _ =
-        Iter.fold partition'
-          (Iter.empty, Array.to_seq elts)
-          (Iter.of_array children)
+        Array.fold_left partition' (Iter.empty, Array.to_seq elts) children
       in
       Iter.to_array leaves
     in
     let rec load' (box', es') =
       if Array.length es' >= capacity then
         let quarters = Box.split box' in
-        let children = partition quarters es' in
-        Node (box', Array.map load' children)
+        let children' = partition quarters es' in
+        Node (box', Array.map load' children')
       else Leaf (box', es')
     in
     match tree with
@@ -248,11 +237,11 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
   let insert ({ capacity; tree } as t) elt =
     let pos = position elt in
     let rec insert' = function
-      | Leaf (box, es) when Array.length es < pred capacity ->
+      | Leaf (box, es) when Array.length es <= pred capacity ->
           Leaf (box, Array.append es [| elt |])
       | Leaf (box, es) ->
           let children = Box.split box in
-          let es' = Seq.init (Array.length es) (fun i -> es.(i)) in
+          let es' = Array.to_seq es in
           let leaves =
             Array.map
               (fun box' ->
@@ -272,7 +261,7 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
   let size t =
     let rec aux n = function
       | Node (_, ns) ->
-          n + (Array.to_seq ns |> Seq.map (aux 0) |> Seq.fold_left ( + ) 0)
+          n + (Iter.of_array ns |> Iter.map (aux 0) |> Iter.fold ( + ) 0)
       | Leaf (_, es) -> Array.length es
       | Empty _ -> 0
     in
@@ -286,19 +275,17 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
       | Leaf (box, es) when Box.contains box pos ->
           Leaf
             ( box,
-              Array.to_seq es
-              |> Seq.filter (fun elt' -> elt <> elt')
-              |> Array.of_seq )
+              Iter.of_array es
+              |> Iter.filter (fun elt' -> elt <> elt')
+              |> Iter.to_array )
       | t -> t
     in
     { t with tree = remove' t.tree }
 
-  let find (search : elt -> bool) { capacity = _; tree } : elt option =
+  let find search { capacity = _; tree } =
     let rec find' = function
-      | Node (_, ns) -> Iter.of_array ns |> Iter.find_map find'
-      | Leaf (_, es) ->
-          Iter.of_array es
-          |> Iter.find (function elt when search elt -> Some elt | _ -> None)
+      | Node (_, ns) -> Array.find_map find' ns
+      | Leaf (_, es) -> Array.find_opt search es
       | Empty _ -> None
     in
     find' tree
@@ -328,18 +315,18 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
       | Node (box, ns) when Box.intersects box range ->
           Iter.(of_array ns |> map range' |> concat)
       | Leaf (box, es) when Box.intersects box range ->
-          let it = Iter.of_array es in
-          let filtered = Iter.filter (position >> Box.contains range) it in
-          filtered
+          Iter.of_array es |> Iter.filter (position >> Box.contains range)
       | _ -> Iter.empty
     in
     range' t.tree |> Iter.to_list
 
   let apply f t =
     let rec apply' = function
-      | Node (box, ns) -> Node (box, Array.map apply' ns)
+      | Node (box, ns) ->
+          Array.map_inplace apply' ns;
+          Node (box, ns)
       | Leaf (box, es) -> Leaf (box, f es)
-      | t -> t
+      | t' -> t'
     in
     { t with tree = apply' t.tree }
 
@@ -368,8 +355,9 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
                  compare
                    (Point.distance (position e1) pt)
                    (Point.distance (position e2) pt))
-          |> Iter.find (fun elt' ->
-                 if position elt' <> pt then Some elt' else None)
+          |> Iter.find (function
+               | elt when position elt <> pt -> Some elt
+               | _ -> None)
       | Empty _ -> None
     in
     search t.tree

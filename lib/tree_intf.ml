@@ -96,7 +96,7 @@ module type Quadtree = sig
   type t
 
   val empty : Box.t -> int -> t
-  val load : t -> elt array -> t
+  val load : t -> elt list -> t
   val insert : t -> elt -> t
   val size : t -> int
   val remove : t -> elt -> t

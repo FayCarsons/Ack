@@ -97,13 +97,13 @@ let test_insert _ =
   in
   time ~label:"TEST INSERT" ~fn:op
 
-(* Test removing a single elt *)
+(* Test removing a single elt from a 1k elt tree *)
 let test_remove _ =
   let op () =
-    let target_size = 10 in
+    let target_size = 1_000 in
     let es = rand_es (pred target_size) 100 in
     let not_rand = (50, 50) in
-    let empty = Q.empty test_domain 4 in
+    let empty = Q.empty test_domain 32 in
     let t = Q.load empty @@ (not_rand :: es) in
     assert_equal (Q.size t) target_size;
     let t = Q.remove t not_rand in
@@ -111,25 +111,24 @@ let test_remove _ =
   in
   time ~label:"TEST REMOVE" ~fn:op
 
-(* Test finding a single elt *)
+(* Test finding a single elt in a 1k elt tree *)
 let test_find _ =
   let op () =
     let not_target_range = 90 in
-    let es = rand_es 10 not_target_range in
+    let es = rand_es 1_000 not_target_range in
     let target_elt = (95, 95) in
-    let empty = Q.empty test_domain 4 in
-    let t = Q.load empty @@ (target_elt :: es) in
+    let t = Q.load (Q.empty test_domain 32) @@ (target_elt :: es) in
     assert' @@ Option.is_some @@ Q.find (fun elt -> elt == target_elt) t
   in
   time ~label:"TEST FIND" ~fn:op
 
-(* Test collecting all elements within a range *)
+(* Test collecting all elements within a range, from within a 1k elt tree *)
 let test_range _ =
   let op () =
     let range = Box.box (Point.splat 50) (Point.splat 100) in
     let target_es = [ (80, 80); (90, 90) ] in
-    let es = rand_es 100 50 in
-    let empty = Q.empty test_domain 4 in
+    let es = rand_es 1_000 50 in
+    let empty = Q.empty test_domain 32 in
     let t = Q.load empty @@ target_es @ es in
     let result_es = Q.range range t in
     assert_equal (List.length result_es) 2
@@ -139,22 +138,21 @@ let test_range _ =
 (* Test finding the nearest elt to a query point *)
 let test_nearest _ =
   let op () =
-    let es = rand_es 100 50 in
+    let es = rand_es 1_000 50 in
     let target, nearest = ((90, 90), (80, 80)) in
-    let empty = Q.empty test_domain 4 in
+    let empty = Q.empty test_domain 32 in
     let t = Q.load empty @@ (target :: nearest :: es) in
     let nearest' = Option.get @@ Q.nearest t @@ Point.splat (fst target) in
     assert_equal nearest nearest'
   in
   time ~label:"TEST NEAREST" ~fn:op
 
-(* Test mapping over elts *)
+(* Test mapping over elts in 1k elt tree *)
 let test_map _ =
   let op () =
-    let es = List.init 10 tuple_splat in
-    let empty = Q.empty test_domain 4 in
-    let t = Q.load empty es in
-    let t = Q.map (fun e -> (succ @@ snd e, succ @@ snd e)) t in
+    let es = List.init 1_000 tuple_splat in
+    let t = Q.load (Q.empty test_domain 32) es in
+    let t = Q.map (fun e -> (succ @@ fst e, snd e)) t in
     Q.iter (fun i -> assert (1 <= fst i && fst i <= 10)) t
   in
   time ~label:"TEST MAP" ~fn:op
@@ -162,8 +160,8 @@ let test_map _ =
 (* Test iterating over elts *)
 let test_iter _ =
   let op () =
-    let es = List.init 10 tuple_splat in
-    let t = Q.load (Q.empty test_domain 4) es in
+    let es = List.init 1_000 tuple_splat in
+    let t = Q.load (Q.empty test_domain 32) es in
     Q.iter (fst >> (fun i -> 0 <= i && i <= 9) >> assert') t
   in
   time ~label:"TEST ITER" ~fn:op
@@ -171,9 +169,8 @@ let test_iter _ =
 (* Test filtering elts *)
 let test_filter _ =
   let op () =
-    let es = List.init 10 tuple_splat in
-    let empty = Q.empty test_domain 4 in
-    let t = Q.load empty es in
+    let es = List.init 1_000 tuple_splat in
+    let t = Q.load (Q.empty test_domain 32) es in
     let t = Q.filter (fst >> is_even) t in
     Q.iter (fst >> is_even >> assert') t
   in
@@ -182,8 +179,8 @@ let test_filter _ =
 (* Test filter_map-ing elts *)
 let test_filter_map _ =
   let op () =
-    let es = List.init 10 tuple_splat in
-    let t = Q.load (Q.empty test_domain 4) es in
+    let es = List.init 1_000 tuple_splat in
+    let t = Q.load (Q.empty test_domain 32) es in
     let t =
       Q.filter_map
         (function pair when is_even @@ fst pair -> Some pair | _ -> None)

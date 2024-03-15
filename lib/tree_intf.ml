@@ -143,4 +143,5 @@ module type KDTree = sig
   val load : t -> elt list -> t
   val insert : t -> elt -> t
   val nearest : t -> floatarray -> elt option
+  val depth : t -> int
 end

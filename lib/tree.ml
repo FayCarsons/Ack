@@ -86,12 +86,17 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
     aux 0 t.tree
 
   let depth t =
-    let rec depth' n = function
-      | Node (_, ns) -> Array.map (depth' @@ succ n) ns |> Array.fold_left max n
-      | Leaf _ -> succ n
-      | Empty _ -> n
+    let rec depth' = function
+      | Node (_, ns) ->
+          let children = Iter.of_array ns in
+          let max_subtree =
+            Iter.map depth' children |> Iter.max ~lt:(fun a b -> a < b)
+          in
+          succ @@ Option.value max_subtree ~default:0
+      | Leaf _ -> 1
+      | Empty _ -> 0
     in
-    depth' 0 t.tree
+    depth' t.tree
 
   let remove t elt =
     let pos = position elt in
@@ -266,12 +271,17 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
     aux 0 t.tree
 
   let depth t =
-    let rec depth' n = function
-      | Node (_, ns) -> Array.map (depth' @@ succ n) ns |> Array.fold_left max n
-      | Leaf _ -> succ n
-      | Empty _ -> n
+    let rec depth' = function
+      | Node (_, ns) ->
+          let children = Iter.of_array ns in
+          let max_subtree =
+            Iter.map depth' children |> Iter.max ~lt:(fun a b -> a < b)
+          in
+          succ @@ Option.value max_subtree ~default:0
+      | Leaf _ -> 1
+      | Empty _ -> 0
     in
-    depth' 0 t.tree
+    depth' t.tree
 
   let remove t elt =
     let pos = position elt in
@@ -467,4 +477,12 @@ module KDTree (E : ElementN) : KDTree with type elt = E.t = struct
     in
 
     Option.map fst @@ nearest' 0 None t.tree
+
+  let depth t =
+    let rec depth' = function
+      | Node (_, left, right) -> succ @@ max (depth' left) (depth' right)
+      | Leaf _ -> 1
+      | Empty -> 0
+    in
+    depth' t.tree
 end

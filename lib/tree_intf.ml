@@ -11,11 +11,6 @@ module type Scalar = sig
   val sqrt : t -> float
 end
 
-module type Rec = sig
-  type n
-  type t
-end
-
 module type Point = sig
   type n
   type t = { x : n; y : n }

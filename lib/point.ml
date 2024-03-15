@@ -1,6 +1,6 @@
 include Tree_intf
 
-module Make2D (Num : Scalar) : Point2D with type n = Num.t = struct
+module Make (Num : Scalar) : Point with type n = Num.t = struct
   type n = Num.t
   type t = { x : n; y : n }
 
@@ -20,8 +20,6 @@ module Make2D (Num : Scalar) : Point2D with type n = Num.t = struct
     map2 Num.sub p1 p2
     |> map (fun n -> Num.mul n n)
     |> fold Num.add Num.zero |> Num.sqrt
-
-  let to_tuple { x; y } = (x, y)
 
   (* Point -> Point arithmetic *)
   let ( +~ ) = map2 Num.add
@@ -62,7 +60,6 @@ module Make3D (Num : Scalar) : Point3D with type n = Num.t = struct
     f z;
     ()
 
-  let to_tuple { x; y; z } = (x, y, z)
   let ( +~ ) = map2 Num.add
   let ( -~ ) = map2 Num.sub
   let ( *~ ) = map2 Num.mul

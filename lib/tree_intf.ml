@@ -11,7 +11,12 @@ module type Scalar = sig
   val sqrt : t -> float
 end
 
-module type Point2D = sig
+module type Rec = sig
+  type n
+  type t
+end
+
+module type Point = sig
   type n
   type t = { x : n; y : n }
 
@@ -23,7 +28,6 @@ module type Point2D = sig
   val fold : ('acc -> n -> 'acc) -> 'acc -> t -> 'acc
   val distance : t -> t -> float
   val iter : (n -> unit) -> t -> unit
-  val to_tuple : t -> n * n
   val ( +~ ) : t -> t -> t
   val ( -~ ) : t -> t -> t
   val ( *~ ) : t -> t -> t
@@ -43,9 +47,9 @@ module type Point3D = sig
   val splat : n -> t
   val map : (n -> n) -> t -> t
   val map2 : (n -> n -> n) -> t -> t -> t
+  val fold : ('acc -> n -> 'acc) -> 'acc -> t -> 'acc
   val distance : t -> t -> float
   val iter : (n -> unit) -> t -> unit
-  val to_tuple : t -> n * n * n
   val ( +~ ) : t -> t -> t
   val ( -~ ) : t -> t -> t
   val ( *~ ) : t -> t -> t
@@ -56,26 +60,14 @@ module type Point3D = sig
   val ( /! ) : t -> n -> t
 end
 
-module type Box2D = sig
+module type Box = sig
   type t
   type n
   type point
 
   val box : point -> point -> t
   val midpoint : t -> point
-  val split : t -> t * t * t * t
-  val contains : t -> point -> bool
-  val intersects : t -> t -> bool
-end
-
-module type Box3D = sig
-  type t
-  type n
-  type point
-
-  val box : point -> point -> t
-  val midpoint : t -> point
-  val split : t -> t * t * t * t * t * t * t * t
+  val split : t -> t array
   val contains : t -> point -> bool
   val intersects : t -> t -> bool
 end
@@ -97,8 +89,8 @@ end
 module type Quadtree = sig
   type n
 
-  module Point : Point2D with type n = n
-  module Box : Box2D with type n = n and type point = Point.t
+  module Point : Point with type n = n
+  module Box : Box with type n = n and type point = Point.t
 
   type elt
   type t
@@ -121,13 +113,13 @@ module type Octree = sig
   type n
 
   module Point : Point3D with type n = n
-  module Box : Box3D with type n = n and type point = Point.t
+  module Box : Box with type n = n and type point = Point.t
 
   type elt
   type t
 
   val empty : Box.t -> int -> t
-  val load : t -> elt list -> t
+  val load : t -> elt array -> t
   val insert : t -> elt -> t
   val size : t -> int
   val remove : t -> elt -> t

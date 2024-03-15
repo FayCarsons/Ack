@@ -1,13 +1,12 @@
-module type Point2D = Tree_intf.Point2D
+module type Point = Tree_intf.Point
 module type Point3D = Tree_intf.Point3D
-module type Box2D = Tree_intf.Box2D
-module type Box3D = Tree_intf.Box3D
+module type Box = Tree_intf.Box
 module type Scalar = Tree_intf.Scalar
 
 let in_range (start', end') x = x >= start' && x < end'
 
-module Make2D (Num : Scalar) (Point : Point2D) :
-  Box2D with type n = Num.t and type point = Point.t = struct
+module Make (Num : Scalar) (Point : Point with type n = Num.t) :
+  Box with type n = Num.t and type point = Point.t = struct
   type n = Num.t
   type point = Point.t
   type t = { min : point; max : point }
@@ -25,7 +24,7 @@ module Make2D (Num : Scalar) (Point : Point2D) :
     let ne = box mid max in
     let se = box (point mid.x min.y) (point max.x mid.y) in
     let sw = box min mid in
-    (nw, ne, se, sw)
+    [| nw; ne; se; sw |]
 
   let contains { min; max } ({ x; y } : Point.t) =
     let open Point in
@@ -41,7 +40,7 @@ module Make2D (Num : Scalar) (Point : Point2D) :
 end
 
 module Make3D (Num : Scalar) (Point : Point3D with type n = Num.t) :
-  Box3D with type n = Num.t and type point = Point.t = struct
+  Box with type n = Num.t and type point = Point.t = struct
   type n = Num.t
   type point = Point.t
   type t = { min : point; max : point }
@@ -78,14 +77,16 @@ module Make3D (Num : Scalar) (Point : Point3D with type n = Num.t) :
       box (point mid.x mid.y min.z) (point max.x max.y mid.z)
     in
 
-    ( front_top_left,
-      front_top_right,
-      front_bottom_left,
-      front_bottom_right,
-      back_top_left,
-      back_top_right,
-      back_bottom_left,
-      back_bottom_right )
+    [|
+      front_top_left;
+      front_top_right;
+      front_bottom_left;
+      front_bottom_right;
+      back_top_left;
+      back_top_right;
+      back_bottom_left;
+      back_bottom_right;
+    |]
 
   let contains { min; max } ({ x; y; z } : point) =
     in_range (min.x, max.x) x

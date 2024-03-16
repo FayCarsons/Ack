@@ -37,7 +37,7 @@ let ( >> ) f g x = g @@ f x
 let assert' b = assert b
 (* Wrap assert for easier use *)
 
-let time ~label ~fn =
+let time label fn =
   let start' = Unix.gettimeofday () in
   fn ();
   let end' = Unix.gettimeofday () in
@@ -49,7 +49,7 @@ let test_intersects _ =
     let box = Box.box (Point.splat 25) (Point.splat 75) in
     assert (Box.intersects box test_domain)
   in
-  time ~label:"TEST INTERSECTS" ~fn:op
+  time "TEST INTERSECTS" op
 
 (* Tests whether a point is contained in a box *)
 let test_contains _ =
@@ -57,7 +57,7 @@ let test_contains _ =
     let pt = Point.splat 50 in
     assert (Box.contains test_domain pt)
   in
-  time ~label:"TEST CONTAINS" ~fn:op
+  time "TEST CONTAINS" op
 
 (* Test size of tree *)
 let test_size _ =
@@ -67,7 +67,7 @@ let test_size _ =
     let t = Q.load (Q.empty test_domain 4) es in
     assert_equal (Q.size t) size
   in
-  time ~label:"TEST SIZE" ~fn:op
+  time "TEST SIZE" op
 
 (* Test loading a lot of elements -- TODO optimize `Q.load` *)
 let test_load_many _ =
@@ -77,7 +77,7 @@ let test_load_many _ =
     let t = Q.load (Q.empty test_domain 64) es in
     assert_equal (Q.size t) size
   in
-  time ~label:"TEST LOAD 100_000" ~fn:op
+  time "TEST LOAD 100_000" op
 
 let test_load_lots _ =
   let op () =
@@ -86,7 +86,7 @@ let test_load_lots _ =
     let t = Q.load (Q.empty test_domain 256) es in
     assert_equal (Q.size t) size
   in
-  time ~label:"TEST LOAD 1_000_000" ~fn:op
+  time "TEST LOAD 1_000_000" op
 
 (* Test inserting a single elt *)
 let test_insert _ =
@@ -95,7 +95,7 @@ let test_insert _ =
     let t = Q.insert empty (tuple_splat 50) in
     assert_equal (Q.size t) 1
   in
-  time ~label:"TEST INSERT" ~fn:op
+  time "TEST INSERT" op
 
 (* Test removing a single elt from a 1k elt tree *)
 let test_remove _ =
@@ -109,7 +109,7 @@ let test_remove _ =
     let t = Q.remove t not_rand in
     assert_equal (Q.size t) (pred target_size)
   in
-  time ~label:"TEST REMOVE" ~fn:op
+  time "TEST REMOVE" op
 
 (* Test finding a single elt in a 1k elt tree *)
 let test_find _ =
@@ -120,7 +120,7 @@ let test_find _ =
     let t = Q.load (Q.empty test_domain 32) @@ (target_elt :: es) in
     assert' @@ Option.is_some @@ Q.find (fun elt -> elt == target_elt) t
   in
-  time ~label:"TEST FIND" ~fn:op
+  time "TEST FIND" op
 
 (* Test collecting all elements within a range, from within a 1k elt tree *)
 let test_range _ =
@@ -133,7 +133,7 @@ let test_range _ =
     let result_es = Q.range range t in
     assert_equal (List.length result_es) 2
   in
-  time ~label:"TEST RANGE" ~fn:op
+  time "TEST RANGE" op
 
 (* Test finding the nearest elt to a query point *)
 let test_nearest _ =
@@ -145,7 +145,7 @@ let test_nearest _ =
     let nearest' = Option.get @@ Q.nearest t @@ Point.splat (fst target) in
     assert_equal nearest nearest'
   in
-  time ~label:"TEST NEAREST" ~fn:op
+  time "TEST NEAREST" op
 
 (* Test mapping over elts in 1k elt tree *)
 let test_map _ =
@@ -155,7 +155,7 @@ let test_map _ =
     let t = Q.map (fun (x, _) -> tuple_splat @@ succ x) t in
     Q.iter (fun (x, _) -> assert (1 <= x && x <= 1_000)) t
   in
-  time ~label:"TEST MAP" ~fn:op
+  time "TEST MAP" op
 
 (* Test iterating over elts *)
 let test_iter _ =
@@ -164,7 +164,7 @@ let test_iter _ =
     let t = Q.load (Q.empty test_domain 32) es in
     Q.iter (fst >> (fun i -> 0 <= i && i <= 1_000) >> assert') t
   in
-  time ~label:"TEST ITER" ~fn:op
+  time "TEST ITER" op
 
 (* Test filtering elts *)
 let test_filter _ =
@@ -174,7 +174,7 @@ let test_filter _ =
     let t = Q.filter (fst >> is_even) t in
     Q.iter (fst >> is_even >> assert') t
   in
-  time ~label:"TEST FILTER" ~fn:op
+  time "TEST FILTER" op
 
 (* Test filter_map-ing elts *)
 let test_filter_map _ =
@@ -188,7 +188,7 @@ let test_filter_map _ =
     in
     Q.iter (fst >> is_even >> assert') t
   in
-  time ~label:"TEST FILTERMAP" ~fn:op
+  time "TEST FILTERMAP" op
 
 let qt_suite =
   "Quadtree test suite"
@@ -210,3 +210,54 @@ let qt_suite =
        ]
 
 let _ = run_test_tt_main qt_suite
+
+module O =
+  Quadtree.Octree
+    (Num)
+    (struct
+      type n = Num.t
+      type t = n * n * n
+
+      let position = Fun.id
+    end)
+
+module Box3 = O.Box
+module Point3 = O.Point
+
+let test_domain = Box3.box (Point3.splat 0) (Point3.splat test_domain_max)
+let _tuple_splat n = (n, n, n)
+
+let rand_es n max =
+  List.init n (fun _ -> (Random.int max, Random.int max, Random.int max))
+
+let test_intersects _ =
+  let op () =
+    let box = Box3.box (Point3.splat 25) (Point3.splat 75) in
+    assert (Box3.intersects test_domain box)
+  in
+  time "OCTREE INTERSECTS" op
+
+let test_contains _ =
+  let op () =
+    let pt = Point3.splat 50 in
+    assert (Box3.contains test_domain pt)
+  in
+  time "OCTREE CONTAINS" op
+
+let test_load_size _ =
+  let op () =
+    let es = rand_es 1_000 100 in
+    let t = O.load (O.empty test_domain 32) es in
+    assert (O.size t == 1_000)
+  in
+  time "OCTREE LOAD" op
+
+let ot_suite =
+  "Octree test suite"
+  >::: [
+         "Octree intersects" >:: test_intersects;
+         "Octree contains" >:: test_contains;
+         "Octree load + size" >:: test_load_size;
+       ]
+
+let _ = run_test_tt_main ot_suite

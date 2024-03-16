@@ -1,6 +1,6 @@
-module Quadtree = Tree.Quadtree
-module Octree = Tree.Octree
-module KDTree = Tree.KDTree
+module Quadtree = Spt.Quadtree
+module Octree = Spt.Octree
+module KDTree = Kd_tree.KDTree
 
 module type Element2D = Tree_intf.Element2D
 module type Element3D = Tree_intf.Element3D

@@ -235,14 +235,14 @@ let test_intersects _ =
     let box = Box3.box (Point3.splat 25) (Point3.splat 75) in
     assert (Box3.intersects test_domain box)
   in
-  time "OCTREE INTERSECTS" op
+  time "INTERSECTS" op
 
 let test_contains _ =
   let op () =
     let pt = Point3.splat 50 in
     assert (Box3.contains test_domain pt)
   in
-  time "OCTREE CONTAINS" op
+  time "CONTAINS" op
 
 let test_load_size _ =
   let op () =
@@ -250,7 +250,25 @@ let test_load_size _ =
     let t = O.load (O.empty test_domain 32) es in
     assert (O.size t == 1_000)
   in
-  time "OCTREE LOAD" op
+  time "LOAD + SIZE" op
+
+let test_load_many _ =
+  let op () =
+    let size = 100_000 in
+    let es = rand_es size 100 in
+    let t = O.load (O.empty test_domain 64) es in
+    assert_equal (O.size t) size
+  in
+  time "TEST LOAD 100_000" op
+
+let test_load_lots _ =
+  let op () =
+    let size = 1_000_000 in
+    let es = rand_es size 100 in
+    let t = O.load (O.empty test_domain 256) es in
+    assert_equal (O.size t) size
+  in
+  time "TEST LOAD 1_000_000" op
 
 let ot_suite =
   "Octree test suite"
@@ -258,6 +276,8 @@ let ot_suite =
          "Octree intersects" >:: test_intersects;
          "Octree contains" >:: test_contains;
          "Octree load + size" >:: test_load_size;
+         "Octree load 100_000" >:: test_load_many;
+         "Octree load 1_000_000" >:: test_load_lots;
        ]
 
 let _ = run_test_tt_main ot_suite

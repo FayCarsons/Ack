@@ -109,6 +109,7 @@ module type Quadtree = sig
   val iter : (elt -> unit) -> t -> unit
   val filter : (elt -> bool) -> t -> t
   val filter_map : (elt -> elt option) -> t -> t
+  val mem : t -> elt -> bool
 end
 
 module type Octree = sig
@@ -133,6 +134,7 @@ module type Octree = sig
   val iter : (elt -> unit) -> t -> unit
   val filter : (elt -> bool) -> t -> t
   val filter_map : (elt -> elt option) -> t -> t
+  val mem : t -> elt -> bool
 end
 
 module type KDTree = sig

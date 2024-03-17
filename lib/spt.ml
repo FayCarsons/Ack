@@ -1,3 +1,4 @@
+(* SPT == Spatial Partitioning Trees *)
 include Tree_intf
 module MakePoint = Point.Make
 module MakeRect = Box.Make
@@ -9,7 +10,7 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
   module Point : Point with type n = Num.t = MakePoint (Num)
 
   module Box : Box with type n = Num.t and type point = Point.t =
-    Box.Make (Num) (Point)
+    MakeRect (Num) (Point)
 
   type n = Num.t
   type elt = E.t
@@ -18,12 +19,12 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
     let x, y = E.position elt in
     Point.point x y
 
-  type tree =
+  type t = { capacity : int; tree : tree }
+
+  and tree =
     | Node of (Box.t * tree array)
     | Leaf of (Box.t * E.t list)
     | Empty of Box.t
-
-  type t = { capacity : int; tree : tree }
 
   let empty domain capacity = { capacity; tree = Empty domain }
 
@@ -159,6 +160,15 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
 
   let filter f t = apply (Iter.of_list >> Iter.filter f >> Iter.to_list) t
   let filter_map f t = apply (List.to_seq >> Seq.filter_map f >> List.of_seq) t
+
+  let mem t elt =
+    let rec mem' = function
+      | Node (_, ns) ->
+          Array.fold_left (fun acc node -> acc || mem' node) false ns
+      | Leaf (_, es) -> List.mem elt es
+      | Empty _ -> false
+    in
+    mem' t.tree
 
   let nearest t pt =
     let get_box = function
@@ -206,12 +216,12 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
     let x, y, z = E.position elt in
     Point.point x y z
 
-  type tree =
+  type t = { capacity : int; tree : tree }
+
+  and tree =
     | Node of Box.t * tree array
     | Leaf of Box.t * elt list
     | Empty of Box.t
-
-  type t = { capacity : int; tree : tree }
 
   let empty domain capacity = { capacity; tree = Empty domain }
 
@@ -347,6 +357,15 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
 
   let filter f t = apply (Iter.of_list >> Iter.filter f >> Iter.to_list) t
   let filter_map f t = apply (List.to_seq >> Seq.filter_map f >> List.of_seq) t
+
+  let mem t elt =
+    let rec mem' = function
+      | Node (_, ns) ->
+          Array.fold_left (fun acc node -> acc || mem' node) false ns
+      | Leaf (_, es) -> List.mem elt es
+      | Empty _ -> false
+    in
+    mem' t.tree
 
   let nearest t pt =
     let get_box = function

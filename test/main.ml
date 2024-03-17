@@ -190,6 +190,14 @@ let test_filter_map _ =
   in
   time "TEST FILTERMAP" op
 
+let test_mem _ =
+  let op () =
+    let target = tuple_splat 50 in
+    let t = Q.load (Q.empty test_domain 4) [ target ] in
+    assert (Q.mem t target)
+  in
+  time "TEST MEM" op
+
 let qt_suite =
   "Quadtree test suite"
   >::: [
@@ -206,7 +214,8 @@ let qt_suite =
          "Test map" >:: test_map;
          "Test filter" >:: test_filter;
          "Test filter_map" >:: test_filter_map;
-         "Test_iter" >:: test_iter;
+         "Test iter" >:: test_iter;
+         "Test mem" >:: test_mem;
        ]
 
 let _ = run_test_tt_main qt_suite
@@ -225,10 +234,12 @@ module Box3 = O.Box
 module Point3 = O.Point
 
 let test_domain = Box3.box (Point3.splat 0) (Point3.splat test_domain_max)
-let _tuple_splat n = (n, n, n)
+let tuple_splat n = (n, n, n)
 
 let rand_es n max =
   List.init n (fun _ -> (Random.int max, Random.int max, Random.int max))
+
+let fst (a, _, _) = a
 
 let test_intersects _ =
   let op () =
@@ -270,6 +281,114 @@ let test_load_lots _ =
   in
   time "TEST LOAD 1_000_000" op
 
+let test_mem _ =
+  let op () =
+    let target = tuple_splat 50 in
+    let t = O.load (O.empty test_domain 4) [ target ] in
+    assert (O.mem t target)
+  in
+  time "TEST MEM" op
+
+(* Test inserting a single elt *)
+let test_insert _ =
+  let op () =
+    let empty = O.empty test_domain 4 in
+    let t = O.insert empty (tuple_splat 50) in
+    assert_equal (O.size t) 1
+  in
+  time "TEST INSERT" op
+
+(* Test removing a single elt from a 1k elt tree *)
+let test_remove _ =
+  let op () =
+    let target_size = 1_000 in
+    let es = rand_es (pred target_size) 100 in
+    let not_rand = tuple_splat 50 in
+    let empty = O.empty test_domain 32 in
+    let t = O.load empty @@ (not_rand :: es) in
+    assert_equal (O.size t) target_size;
+    let t = O.remove t not_rand in
+    assert_equal (O.size t) (pred target_size)
+  in
+  time "TEST REMOVE" op
+
+(* Test finding a single elt in a 1k elt tree *)
+let test_find _ =
+  let op () =
+    let not_target_range = 90 in
+    let es = rand_es 1_000 not_target_range in
+    let target_elt = tuple_splat 95 in
+    let t = O.load (O.empty test_domain 32) @@ (target_elt :: es) in
+    assert' @@ Option.is_some @@ O.find (fun elt -> elt == target_elt) t
+  in
+  time "TEST FIND" op
+
+(* Test collecting all elements within a range, from within a 1k elt tree *)
+let test_range _ =
+  let op () =
+    let range = Box3.box (Point3.splat 50) (Point3.splat 100) in
+    let target_es = [ tuple_splat 80; tuple_splat 90 ] in
+    let es = rand_es 1_000 50 in
+    let t = O.load (O.empty test_domain 32) @@ target_es @ es in
+    let result_es = O.range range t in
+    assert_equal (List.length result_es) 2
+  in
+  time "TEST RANGE" op
+
+(* Test finding the nearest elt to a query point *)
+let test_nearest _ =
+  let op () =
+    let es = rand_es 1_000 50 in
+    let target, nearest = (tuple_splat 90, tuple_splat 80) in
+    let t = O.load (O.empty test_domain 32) @@ (target :: nearest :: es) in
+    let nearest' = Option.get @@ O.nearest t @@ Point3.splat @@ fst target in
+    assert_equal nearest nearest'
+  in
+  time "TEST NEAREST" op
+
+(* Test mapping over elts in 1k elt tree *)
+let test_map _ =
+  let op () =
+    let es = List.init 1_000 tuple_splat in
+    let t = O.load (O.empty test_domain 32) es in
+    let t = O.map (fun (x, _, _) -> tuple_splat @@ succ x) t in
+    O.iter (fun (x, _, _) -> assert' (1 <= x && x <= 1_000)) t
+  in
+  time "TEST MAP" op
+
+(* Test iterating over elts *)
+let test_iter _ =
+  let op () =
+    let es = List.init 1_000 tuple_splat in
+    let t = O.load (O.empty test_domain 32) es in
+    O.iter (fun (x, _, _) -> assert (0 <= x && x <= 1_000)) t
+  in
+  time "TEST ITER" op
+
+(* Test filtering elts *)
+let test_filter _ =
+  let op () =
+    let es = List.init 1_000 tuple_splat in
+    let t = O.load (O.empty test_domain 32) es in
+    let t = O.filter (fst >> is_even) t in
+    O.iter (fst >> is_even >> assert') t
+  in
+  time "TEST FILTER" op
+
+(* Test filter_map-ing elts *)
+let test_filter_map _ =
+  let op () =
+    let es = List.init 1_000 tuple_splat in
+    let t = O.load (O.empty test_domain 32) es in
+    let t =
+      O.filter_map
+        (function pair when is_even @@ fst pair -> Some pair | _ -> None)
+        t
+    in
+    O.iter (fst >> is_even >> assert') t
+  in
+  time "TEST FILTERMAP" op
+
 let ot_suite =
   "Octree test suite"
   >::: [
@@ -278,6 +397,16 @@ let ot_suite =
          "Octree load + size" >:: test_load_size;
          "Octree load 100_000" >:: test_load_many;
          "Octree load 1_000_000" >:: test_load_lots;
+         "Octree test mem" >:: test_mem;
+         "Octree test insert" >:: test_insert;
+         "Octree test remove" >:: test_remove;
+         "Octree test find" >:: test_find;
+         "Octree test range" >:: test_range;
+         "Octree test nearest" >:: test_nearest;
+         "Octree test map" >:: test_map;
+         "Octree test filter" >:: test_filter;
+         "Octree test filter_map" >:: test_filter_map;
+         "Octree test iter" >:: test_iter;
        ]
 
 let _ = run_test_tt_main ot_suite

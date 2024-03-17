@@ -2,8 +2,9 @@ include Tree_intf
 
 module KDTree (E : ElementN) : KDTree with type elt = E.t = struct
   type elt = E.t
-  type tree = Node of elt * tree * tree | Leaf of elt list | Empty
+
   type t = { capacity : int; dimensionality : int; tree : tree }
+  and tree = Node of elt * tree * tree | Leaf of elt list | Empty
 
   let leaf points = Leaf points
 

@@ -410,3 +410,37 @@ let ot_suite =
        ]
 
 let _ = run_test_tt_main ot_suite
+
+module Elt = struct
+  type t = { name : string; position : floatarray }
+
+  let position t = t.position
+  let elt name position = { name; position }
+  let name { name; _ } = name
+end
+
+module K = Quadtree.KDTree (Elt)
+module FA = Float.Array
+
+let random_str () =
+  Seq.init (succ @@ Random.int 10) char_of_int |> String.of_seq
+
+let rand_elt max' =
+  Elt.elt (random_str ()) (FA.init 2 @@ fun _ -> Random.float max')
+
+let rand_es n max' = List.init n (fun _ -> rand_elt max')
+
+let test_empty _ =
+  let op () =
+    let t = K.empty 1 2 in
+    assert_equal 0 @@ K.size t
+  in
+  time "TEST EMPTY" op
+
+let test_size _ =
+  let op () =
+    let es = rand_es 100 100. in
+    let t = K.load (K.empty 2 2) es in
+    assert_equal (K.size t) 100
+  in
+  time "KDTREE TEST SIZE" op

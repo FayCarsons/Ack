@@ -416,7 +416,7 @@ module Elt = struct
 
   let position t = t.position
   let elt name position = { name; position }
-  let name { name; _ } = name
+  let _name { name; _ } = name
 end
 
 module K = Quadtree.KDTree (Elt)
@@ -443,4 +443,22 @@ let test_size _ =
     let t = K.load (K.empty 2 2) es in
     assert_equal (K.size t) 100
   in
-  time "KDTREE TEST SIZE" op
+  time "TEST SIZE" op
+
+let test_depth _ =
+  let op () =
+    let es = rand_es 3 100. in
+    let t = K.load (K.empty 2 2) es in
+    assert_equal (K.depth t) 2
+  in
+  time "TEST DEPTH" op
+
+let kd_suite =
+  "KDTree test suite"
+  >::: [
+         "Test empty" >:: test_empty;
+         "Test size" >:: test_size;
+         "Test depth" >:: test_depth;
+       ]
+
+let _ = run_test_tt_main kd_suite

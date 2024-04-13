@@ -1,26 +1,24 @@
 (lang dune 3.14)
 
-(name quadtree)
+(name ack)
 
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github faycarsons/ack))
 
-(authors "Author Name")
+(authors "Fay Carsons")
 
-(maintainers "Maintainer Name")
+(maintainers "Fay Carsons")
 
 (license LICENSE)
 
 (documentation https://url/to/documentation)
 
 (package
- (name quadtree)
- (synopsis "A short synopsis")
- (description "A longer description")
- (depends ocaml dune ounit iter)
+ (name ack)
+ (synopsis "Spatial data structures")
+ (description "Performance optimized spatial data structures")
+ (depends ocaml dune ounit iter core)
  (tags
-  (topics "to describe" your project)))
-
-; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
+  (topics quadtree octree kd-tree spatial spatial-partitioning)))

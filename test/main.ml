@@ -1,5 +1,5 @@
 open OUnit2
-module Quadtree = Quadtree.Lib
+module Quadtree = Ack.Quadtree
 
 module Num = struct
   include Int
@@ -8,7 +8,7 @@ module Num = struct
 end
 
 module Q =
-  Quadtree.Quadtree
+  Quadtree
     (Num)
     (struct
       type n = Num.t
@@ -182,7 +182,7 @@ let qt_suite =
 let _ = run_test_tt_main qt_suite
 
 module O =
-  Quadtree.Octree
+  Ack.Octree
     (Num)
     (struct
       type n = Num.t
@@ -341,7 +341,7 @@ module Elt = struct
   let _name { name; _ } = name
 end
 
-module K = Quadtree.KDTree (Elt)
+module K = Ack.KDTree (Elt)
 module FA = Float.Array
 
 let random_str () =

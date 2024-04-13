@@ -2,6 +2,7 @@
 include Tree_intf
 module MakePoint = Point.Make
 module MakeRect = Box.Make
+open Core
 
 let ( >> ) f g x = g @@ f x
 
@@ -32,18 +33,18 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
     let partition children elts =
       let partition' (leaves, elts_seq) box =
         let belong, dont_belong =
-          List.partition (position >> Box.contains box) elts_seq
+          List.partition_tf ~f:(position >> Box.contains box) elts_seq
         in
         let leaf = (box, belong) in
         (leaf :: leaves, dont_belong)
       in
-      let leaves, _ = Array.fold_left partition' ([], elts) children in
+      let leaves, _ = Array.fold ~f:partition' ~init:([], elts) children in
       Array.of_list leaves
     in
     let rec load' (box', es') =
       if List.length es' >= capacity then
         let quarters = Box.split box' in
-        let children' = partition quarters es' |> Array.map load' in
+        let children' = partition quarters es' |> Array.map ~f:load' in
         Node (box', children')
       else Leaf (box', es')
     in
@@ -61,7 +62,7 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
           let es' = Iter.of_list es in
           let leaves =
             Array.map
-              (fun box' ->
+              ~f:(fun box' ->
                 Leaf
                   ( box',
                     Iter.to_list
@@ -70,7 +71,7 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
           in
           Node (box, leaves)
       | Node (box, _) as node' when not @@ Box.contains box pos -> node'
-      | Node (box, ns) -> Node (box, Array.map insert' ns)
+      | Node (box, ns) -> Node (box, Array.map ~f:insert' ns)
       | Empty box -> Leaf (box, [ elt ])
     in
     { t with tree = insert' tree }
@@ -101,12 +102,14 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
     let pos = position elt in
     let rec remove' = function
       | Node (box, ns) when Box.contains box pos ->
-          Node (box, Array.map remove' ns)
+          Node (box, Array.map ~f:remove' ns)
       | Leaf (box, es) when Box.contains box pos ->
           Leaf
             ( box,
               Iter.of_list es
-              |> Iter.filter (fun elt' -> elt <> elt')
+              |> Iter.filter (fun elt' ->
+                     let open Poly in
+                     elt <> elt')
               |> Iter.to_list )
       | t -> t
     in
@@ -114,8 +117,8 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
 
   let find search { capacity = _; tree } =
     let rec find' = function
-      | Node (_, ns) -> Array.find_map find' ns
-      | Leaf (_, es) -> List.find_opt search es
+      | Node (_, ns) -> Array.find_map ~f:find' ns
+      | Leaf (_, es) -> List.find ~f:search es
       | Empty _ -> None
     in
     find' tree
@@ -123,17 +126,17 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
   let map f t =
     let rec map' = function
       | Node (box, ns) ->
-          Array.map_inplace map' ns;
+          Array.map_inplace ~f:map' ns;
           Node (box, ns)
-      | Leaf (box, es) -> Leaf (box, List.map f es)
+      | Leaf (box, es) -> Leaf (box, List.map ~f es)
       | t -> t
     in
     { t with tree = map' t.tree }
 
   let iter f t =
     let rec iter' = function
-      | Node (_, ns) -> Array.iter iter' ns
-      | Leaf (_, es) -> List.iter f es
+      | Node (_, ns) -> Array.iter ~f:iter' ns
+      | Leaf (_, es) -> List.iter ~f es
       | Empty _ -> ()
     in
     iter' t.tree
@@ -151,7 +154,7 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
   let apply f t =
     let rec apply' = function
       | Node (box, ns) ->
-          Array.map_inplace apply' ns;
+          Array.map_inplace ~f:apply' ns;
           Node (box, ns)
       | Leaf (box, es) -> Leaf (box, f es)
       | t' -> t'
@@ -159,13 +162,15 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
     { t with tree = apply' t.tree }
 
   let filter f t = apply (Iter.of_list >> Iter.filter f >> Iter.to_list) t
-  let filter_map f t = apply (List.to_seq >> Seq.filter_map f >> List.of_seq) t
+
+  let filter_map f t =
+    apply (Iter.of_list >> Iter.filter_map f >> Iter.to_list) t
 
   let mem t elt =
     let rec mem' = function
       | Node (_, ns) ->
-          Array.fold_left (fun acc node -> acc || mem' node) false ns
-      | Leaf (_, es) -> List.mem elt es
+          Array.fold ~f:(fun acc node -> acc || mem' node) ~init:false ns
+      | Leaf (_, es) -> List.mem es elt ~equal:(fun e e' -> Poly.( = ) e e')
       | Empty _ -> false
     in
     mem' t.tree
@@ -180,19 +185,18 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
       | Node (_, ns) ->
           Iter.of_array ns
           |> Iter.sort ~cmp:(fun n1 n2 ->
-                 compare
+                 Float.compare
                    (Point.distance (Box.midpoint @@ get_box n1) pt)
                    (Point.distance (Box.midpoint @@ get_box n2) pt))
           |> Iter.find_map search
       | Leaf (_, es) ->
           Iter.of_list es
           |> Iter.sort ~cmp:(fun e1 e2 ->
-                 compare
+                 Float.compare
                    (Point.distance (position e1) pt)
                    (Point.distance (position e2) pt))
-          |> Iter.find (function
-               | elt when position elt <> pt -> Some elt
-               | _ -> None)
+          |> Iter.find (fun elt ->
+                 if not @@ Point.equal (position elt) pt then Some elt else None)
       | Empty _ -> None
     in
     search t.tree
@@ -229,18 +233,18 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
     let partition children elts =
       let partition' (leaves, elts_seq) box =
         let belong, dont_belong =
-          List.partition (position >> Box.contains box) elts_seq
+          List.partition_tf ~f:(position >> Box.contains box) elts_seq
         in
         let leaf = (box, belong) in
         (leaf :: leaves, dont_belong)
       in
-      let leaves, _ = Array.fold_left partition' ([], elts) children in
+      let leaves, _ = Array.fold ~f:partition' ~init:([], elts) children in
       Array.of_list leaves
     in
     let rec load' (box', es') =
       if List.length es' >= capacity then
         let quarters = Box.split box' in
-        let children' = partition quarters es' |> Array.map load' in
+        let children' = partition quarters es' |> Array.map ~f:load' in
         Node (box', children')
       else Leaf (box', es')
     in
@@ -258,7 +262,7 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
           let es' = Iter.of_list es in
           let leaves =
             Array.map
-              (fun box' ->
+              ~f:(fun box' ->
                 Leaf
                   ( box',
                     Iter.to_list
@@ -267,7 +271,7 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
           in
           Node (box, leaves)
       | Node (box, _) as node' when not @@ Box.contains box pos -> node'
-      | Node (box, ns) -> Node (box, Array.map insert' ns)
+      | Node (box, ns) -> Node (box, Array.map ~f:insert' ns)
       | Empty box -> Leaf (box, [ elt ])
     in
     { t with tree = insert' tree }
@@ -298,12 +302,12 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
     let pos = position elt in
     let rec remove' = function
       | Node (box, ns) when Box.contains box pos ->
-          Node (box, Array.map remove' ns)
+          Node (box, Array.map ~f:remove' ns)
       | Leaf (box, es) when Box.contains box pos ->
           Leaf
             ( box,
               Iter.of_list es
-              |> Iter.filter (fun elt' -> elt <> elt')
+              |> Iter.filter (fun elt' -> Poly.( <> ) elt elt')
               |> Iter.to_list )
       | t -> t
     in
@@ -311,8 +315,8 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
 
   let find search { capacity = _; tree } =
     let rec find' = function
-      | Node (_, ns) -> Array.find_map find' ns
-      | Leaf (_, es) -> List.find_opt search es
+      | Node (_, ns) -> Array.find_map ~f:find' ns
+      | Leaf (_, es) -> List.find ~f:search es
       | Empty _ -> None
     in
     find' tree
@@ -320,17 +324,17 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
   let map f t =
     let rec map' = function
       | Node (box, ns) ->
-          Array.map_inplace map' ns;
+          Array.map_inplace ~f:map' ns;
           Node (box, ns)
-      | Leaf (box, es) -> Leaf (box, List.map f es)
+      | Leaf (box, es) -> Leaf (box, List.map ~f es)
       | t -> t
     in
     { t with tree = map' t.tree }
 
   let iter f t =
     let rec iter' = function
-      | Node (_, ns) -> Array.iter iter' ns
-      | Leaf (_, es) -> List.iter f es
+      | Node (_, ns) -> Array.iter ~f:iter' ns
+      | Leaf (_, es) -> List.iter ~f es
       | Empty _ -> ()
     in
     iter' t.tree
@@ -348,7 +352,7 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
   let apply f t =
     let rec apply' = function
       | Node (box, ns) ->
-          Array.map_inplace apply' ns;
+          Array.map_inplace ~f:apply' ns;
           Node (box, ns)
       | Leaf (box, es) -> Leaf (box, f es)
       | t' -> t'
@@ -356,13 +360,15 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
     { t with tree = apply' t.tree }
 
   let filter f t = apply (Iter.of_list >> Iter.filter f >> Iter.to_list) t
-  let filter_map f t = apply (List.to_seq >> Seq.filter_map f >> List.of_seq) t
+
+  let filter_map f t =
+    apply (Iter.of_list >> Iter.filter_map f >> Iter.to_list) t
 
   let mem t elt =
     let rec mem' = function
       | Node (_, ns) ->
-          Array.fold_left (fun acc node -> acc || mem' node) false ns
-      | Leaf (_, es) -> List.mem elt es
+          Array.fold ~f:(fun acc node -> acc || mem' node) ~init:false ns
+      | Leaf (_, es) -> List.mem es elt ~equal:Poly.equal
       | Empty _ -> false
     in
     mem' t.tree
@@ -377,19 +383,18 @@ module Octree (Num : Scalar) (E : Element3D with type n = Num.t) :
       | Node (_, ns) ->
           Iter.of_array ns
           |> Iter.sort ~cmp:(fun n1 n2 ->
-                 compare
+                 Float.compare
                    (Point.distance (Box.midpoint @@ get_box n1) pt)
                    (Point.distance (Box.midpoint @@ get_box n2) pt))
           |> Iter.find_map search
       | Leaf (_, es) ->
           Iter.of_list es
           |> Iter.sort ~cmp:(fun e1 e2 ->
-                 compare
+                 Float.compare
                    (Point.distance (position e1) pt)
                    (Point.distance (position e2) pt))
-          |> Iter.find (function
-               | elt when position elt <> pt -> Some elt
-               | _ -> None)
+          |> Iter.find (fun elt ->
+                 if not (Point.equal (position elt) pt) then Some elt else None)
       | Empty _ -> None
     in
     search t.tree

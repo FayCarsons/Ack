@@ -5,6 +5,7 @@ module Num = struct
   include Int
 
   let sqrt n = float_of_int n |> sqrt
+  let ( <> ) a b = Int.compare a b != 0
 end
 
 module Q =
@@ -334,7 +335,7 @@ let ot_suite =
 let _ = run_test_tt_main ot_suite
 
 module Elt = struct
-  type t = { name : string; position : floatarray }
+  type t = { name : string; position : float array }
 
   let position t = t.position
   let elt name position = { name; position }
@@ -348,7 +349,7 @@ let random_str () =
   Seq.init (succ @@ Random.int 10) char_of_int |> String.of_seq
 
 let rand_elt max' =
-  Elt.elt (random_str ()) (FA.init 2 @@ fun _ -> Random.float max')
+  Elt.elt (random_str ()) (Array.init 2 @@ fun _ -> Random.float max')
 
 let rand_es n max' = List.init n (fun _ -> rand_elt max')
 

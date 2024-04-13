@@ -12,6 +12,7 @@ module Make (Num : Scalar) (Point : Point with type n = Num.t) :
   type t = { min : point; max : point }
 
   let box (min : point) (max : point) : t = { min; max }
+  let equal b1 b2 = Point.equal b1.min b2.min && Point.equal b1.max b2.max
 
   let midpoint { min; max } =
     let open Point in
@@ -46,6 +47,7 @@ module Make3D (Num : Scalar) (Point : Point3D with type n = Num.t) :
   type t = { min : point; max : point }
 
   let box min max = { min; max }
+  let equal b1 b2 = Point.equal b1.min b2.min && Point.equal b1.max b2.max
 
   let midpoint { min; max } =
     let open Point in

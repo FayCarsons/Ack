@@ -1,9 +1,11 @@
 include Tree_intf
+open Core
 
 module Make (Num : Scalar) : Point with type n = Num.t = struct
   type n = Num.t
   type t = { x : n; y : n }
 
+  let equal p1 p2 = Num.equal p1.x p2.x && Num.equal p1.y p2.y
   let two = Num.succ Num.one
   let point x y = { x; y }
   let splat x = point x x
@@ -38,6 +40,9 @@ end
 module Make3D (Num : Scalar) : Point3D with type n = Num.t = struct
   type n = Num.t
   type t = { x : n; y : n; z : n }
+
+  let equal p1 p2 =
+    Num.equal p1.x p2.x && Num.equal p1.y p2.y && Num.equal p1.z p2.z
 
   let two = Num.succ Num.one
   let point x y z = { x; y; z }

@@ -1,4 +1,4 @@
 (library
  (name ack)
  (public_name ack)
- (libraries iter))
+ (libraries iter core))

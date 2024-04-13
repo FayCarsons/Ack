@@ -9,12 +9,15 @@ module type Scalar = sig
   val mul : t -> t -> t
   val div : t -> t -> t
   val sqrt : t -> float
+  val equal : t -> t -> bool
+  val ( <> ) : t -> t -> bool
 end
 
 module type Point = sig
   type n
   type t = { x : n; y : n }
 
+  val equal : t -> t -> bool
   val two : n
   val point : n -> n -> t
   val splat : n -> t
@@ -37,6 +40,7 @@ module type Point3D = sig
   type n
   type t = { x : n; y : n; z : n }
 
+  val equal : t -> t -> bool
   val two : n
   val point : n -> n -> n -> t
   val splat : n -> t
@@ -60,6 +64,7 @@ module type Box = sig
   type n
   type point
 
+  val equal : t -> t -> bool
   val box : point -> point -> t
   val midpoint : t -> point
   val split : t -> t array
@@ -84,7 +89,7 @@ end
 module type ElementN = sig
   type t
 
-  val position : t -> floatarray
+  val position : t -> float array
 end
 
 module type Quadtree = sig
@@ -144,7 +149,7 @@ module type KDTree = sig
   val empty : int -> int -> t
   val load : t -> elt list -> t
   val insert : t -> elt -> t
-  val nearest : t -> floatarray -> elt option
+  val nearest : t -> float array -> elt option
   val depth : t -> int
   val size : t -> int
 end

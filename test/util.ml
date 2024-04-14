@@ -1,5 +1,5 @@
-let test_domain_max = 100
-let is_even n = n mod 2 = 0
+let test_domain_max = 100.
+let is_even n = Float.rem n 2. = 0.
 let ( >> ) f g x = g @@ f x
 (* Fn composition *)
 
@@ -12,15 +12,16 @@ let time label fn =
   fn ();
   let end' = now () in
   Printf.printf "%s took %f seconds\n" label (diff end' start' |> Span.to_sec)
+;;
+
 (* Times the fn passed and prints its duration w/ label *)
 
 module Num = struct
   open Core
-  include Int
+  include Float
 
-  let add = Int.( + )
-  let sub = Int.( - )
-  let mul = Int.( * )
-  let div = Int.( / )
-  let sqrt n = float_of_int n |> sqrt
+  let mul = Float.( * )
+  let div = Float.( / )
+  let succ n = Float.add 1. n
+  let pred n = Float.sub n 1.
 end

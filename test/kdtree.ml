@@ -9,14 +9,18 @@ module Elt = struct
 
   let position t = t.position
   let equal t1 t2 = String.equal t1.name t2.name
-  let elt name position = { name; position }
+  let create name position = { name; position }
   let _name { name; _ } = name
 end
 
 module K = Ack.KDTree.Make (Elt)
 
 let random_str () = String.init (succ @@ Random.int 10) ~f:char_of_int
-let rand_elt max' = Elt.elt (random_str ()) (Array.init 2 ~f:(fun _ -> Random.float max'))
+
+let rand_elt max' =
+  Elt.create (random_str ()) (Array.init 2 ~f:(fun _ -> Random.float max'))
+;;
+
 let rand_es n max' = List.init n ~f:(fun _ -> rand_elt max')
 
 let test_empty _ =

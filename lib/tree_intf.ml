@@ -17,141 +17,146 @@ end
 (** 2D Point *)
 module type Point = sig
   type n
-  type t = { x : n; y : n }
+
+  type t =
+    { x : n
+    ; y : n
+    }
 
   val equal : t -> t -> bool
   val two : n
   val point : n -> n -> t
 
-  val splat : n -> t
   (** [splat n] Creates a point with all fields being n *)
+  val splat : n -> t
 
-  val map : (n -> n) -> t -> t
   (** [map f point] applies {i f} to fields of {i point} *)
+  val map : (n -> n) -> t -> t
 
-  val map2 : (n -> n -> n) -> t -> t -> t
   (** [map2 f pt1 pt2] Applies {i f} to the fields of {i pt1} and {i pt2} pairwise. It is equivalent to: {[
       let x = f pt1.x pt2.x and y = f pt1.y pt2.y in { x; y }
       ]} *)
+  val map2 : (n -> n -> n) -> t -> t -> t
 
-  val fold : ('acc -> n -> 'acc) -> 'acc -> t -> 'acc
   (** [fold f init point] Threads an accumulator through the application of {i f} to the fields of {i point} *)
+  val fold : ('acc -> n -> 'acc) -> 'acc -> t -> 'acc
 
-  val distance : t -> t -> float
   (** [distance pt1 pt2] Returns the distance (always a {i float}) beween two points *)
+  val distance : t -> t -> float
 
-  val iter : (n -> unit) -> t -> unit
   (** [iter f poin] Applies {i f} to each field of {i point}. It is assumed that {i f} is side-effectful *)
+  val iter : (n -> unit) -> t -> unit
 
-  (** Point-point arithmetic. These are equivalent to 
+  (** Point-point arithmetic. These are equivalent to
       {[
-      let x = op pt1.x pt2.x 
-      and y = op pt1.y pt2.y in  
-      { x; y }
-      ]}
-      *)
-
-  val ( +~ ) : t -> t -> t
-  (** Point-point addition *)
-
-  val ( -~ ) : t -> t -> t
-  (** Point-point subtraction *)
-
-  val ( *~ ) : t -> t -> t
-  (** Point-point multiplication *)
-
-  val ( /~ ) : t -> t -> t
-  (** Point-point division *)
-
-  (** Point-scalar operations, these are equivalent to 
-      {[
-      point_point_op point (Point.splat scalar)
+        let x = op pt1.x pt2.x
+        and y = op pt1.y pt2.y in
+        { x; y }
       ]} *)
 
-  val ( +! ) : t -> n -> t
+  (** Point-point addition *)
+  val ( +~ ) : t -> t -> t
+
+  (** Point-point subtraction *)
+  val ( -~ ) : t -> t -> t
+
+  (** Point-point multiplication *)
+  val ( *~ ) : t -> t -> t
+
+  (** Point-point division *)
+  val ( /~ ) : t -> t -> t
+
+  (** Point-scalar operations, these are equivalent to
+      {[
+        point_point_op point (Point.splat scalar)
+      ]} *)
+
   (** Point-scalar addition *)
+  val ( +! ) : t -> n -> t
 
-  val ( -! ) : t -> n -> t
   (** Point-scalar subtraction *)
+  val ( -! ) : t -> n -> t
 
-  val ( *! ) : t -> n -> t
   (** Point-scalar multiplication *)
+  val ( *! ) : t -> n -> t
 
-  val ( /! ) : t -> n -> t
   (** Point-scalar division *)
+  val ( /! ) : t -> n -> t
 end
 
 module type Point3D = sig
   type n
-  type t = { x : n; y : n; z : n }
+
+  type t =
+    { x : n
+    ; y : n
+    ; z : n
+    }
 
   val equal : t -> t -> bool
   val two : n
   val point : n -> n -> n -> t
 
-  val splat : n -> t
   (** [splat n] Creates a point with all fields being n *)
+  val splat : n -> t
 
-  val map : (n -> n) -> t -> t
   (** [map f point] applies {i f} to fields of {i point} *)
+  val map : (n -> n) -> t -> t
 
+  (** [map2 f pt1 pt2] Applies {i f} to the fields of {i pt1} and {i pt2} pairwise. It is equivalent to:
+      {[
+        let x = f pt1.x pt2.x
+        and y = f pt1.y pt2.y
+        and z = f pt1.z pt2.z in
+        { x; y; z }
+      ]} *)
   val map2 : (n -> n -> n) -> t -> t -> t
-  (** [map2 f pt1 pt2] Applies {i f} to the fields of {i pt1} and {i pt2} pairwise. It is equivalent to: 
-      {[
-      let x = f pt1.x pt2.x
-      and y = f pt1.y pt2.y 
-      and z = f pt1.z pt2.z 
-      in 
-      { x; y; z }
-      ]} *)
 
-  val fold : ('acc -> n -> 'acc) -> 'acc -> t -> 'acc
   (** [fold f init point] Threads an accumulator through the application of {i f} to the fields of {i point} *)
+  val fold : ('acc -> n -> 'acc) -> 'acc -> t -> 'acc
 
-  val distance : t -> t -> float
   (** [distance pt1 pt2] Returns the distance (always a {i float}) beween two points *)
+  val distance : t -> t -> float
 
-  val iter : (n -> unit) -> t -> unit
   (** [iter f poin] Applies {i f} to each field of {i point}. It is assumed that {i f} is side-effectful *)
+  val iter : (n -> unit) -> t -> unit
 
-  (** Point-point arithmetic. These are equivalent to 
+  (** Point-point arithmetic. These are equivalent to
       {[
-      let x = op pt1.x pt2.x 
-      and y = op pt1.y pt2.y 
-      and z = op pt1.z pt2.z 
-      in
-      { x; y; z }
-      ]}
-      *)
-
-  val ( +~ ) : t -> t -> t
-  (** Point-point addition *)
-
-  val ( -~ ) : t -> t -> t
-  (** Point-point subtraction *)
-
-  val ( *~ ) : t -> t -> t
-  (** Point-point multiplication *)
-
-  val ( /~ ) : t -> t -> t
-  (** Point-point division *)
-
-  (** Point-scalar operations, these are equivalent to 
-      {[
-      point_point_op point (Point.splat scalar)
+        let x = op pt1.x pt2.x
+        and y = op pt1.y pt2.y
+        and z = op pt1.z pt2.z in
+        { x; y; z }
       ]} *)
 
-  val ( +! ) : t -> n -> t
+  (** Point-point addition *)
+  val ( +~ ) : t -> t -> t
+
+  (** Point-point subtraction *)
+  val ( -~ ) : t -> t -> t
+
+  (** Point-point multiplication *)
+  val ( *~ ) : t -> t -> t
+
+  (** Point-point division *)
+  val ( /~ ) : t -> t -> t
+
+  (** Point-scalar operations, these are equivalent to
+      {[
+        point_point_op point (Point.splat scalar)
+      ]} *)
+
   (** Point-scalar addition *)
+  val ( +! ) : t -> n -> t
 
-  val ( -! ) : t -> n -> t
   (** Point-scalar subtraction *)
+  val ( -! ) : t -> n -> t
 
-  val ( *! ) : t -> n -> t
   (** Point-scalar multiplication *)
+  val ( *! ) : t -> n -> t
 
-  val ( /! ) : t -> n -> t
   (** Point-scalar division *)
+  val ( /! ) : t -> n -> t
 end
 
 (** N-dimension Axis Aligned Bounding Box (AABB) *)
@@ -163,17 +168,17 @@ module type Box = sig
   val equal : t -> t -> bool
   val box : point -> point -> t
 
-  val midpoint : t -> point
   (** [midpoint box] Returns the point between {i min} and {i max} *)
+  val midpoint : t -> point
 
-  val split : t -> t array
   (** [split box] Splits a box into equal sub-boxes based on dimensionality. I.E. 2d box -> 4 sub-boxes, 3d -> 8, etc *)
+  val split : t -> t array
 
-  val contains : t -> point -> bool
   (** [contains box point] Tests whether {i point} lies within the domain of {i box} *)
+  val contains : t -> point -> bool
 
-  val intersects : t -> t -> bool
   (**  [intesects box1 box2] Tests whether {i box1} intersects {i box2} *)
+  val intersects : t -> t -> bool
 end
 
 (** Generic 2d element *)
@@ -204,61 +209,61 @@ end
 
 (** A Quadtree, requires a {i Num} module and an {i Element2D} defining its coordinate system and the elements in its leaves *)
 module type Quadtree = sig
-  type n
   (** Number type for coordinate system *)
+  type n
 
   module Point : Point with type n = n
   module Box : Box with type n = n and type point = Point.t
 
-  type elt
   (** Element type *)
+  type elt
 
-  type t
   (** The tree: {[ type t = { capacity : int; tree : tree } ]} where {i capacity} 
       is the maximum number of elements in any given leaf node and {i tree} is the 
       recursive variant defining the quadtree. *)
+  type t
 
-  val empty : Box.t -> int -> t
   (** [empty domain capacity] constructs an empty tree with leaf capacity {capacity} and spatial domain from {i domain.min} to {i domain.max} *)
+  val empty : Box.t -> int -> t
 
-  val load : t -> elt list -> t
   (** [load empty_tree elements] extends an empty tree, distributing the elements amongst its leaves *)
+  val load : t -> elt list -> t
 
-  val insert : t -> elt -> t
   (** [insert t elt] insert a single element into a tree *)
+  val insert : t -> elt -> t
 
-  val size : t -> int
   (** [size tree] returns the number of elements in  the tree *)
+  val size : t -> int
 
-  val depth : t -> int
   (** [depth tree] returns the depth of the tree *)
+  val depth : t -> int
 
-  val remove : t -> elt -> t
   (** [remove tree elt] removes any elements that have {b deep equality} with elt from the tree *)
+  val remove : t -> elt -> t
 
-  val find : (elt -> bool) -> t -> elt option
   (** [find search_fn t] returns the first element for which (search_fn elt) returns true, or none *)
+  val find : (elt -> bool) -> t -> elt option
 
-  val range : Box.t -> t -> elt list
   (** [range domain tree] returns all elements with a position between {i domain.min} and {i domain.max} *)
+  val range : Box.t -> t -> elt list
 
-  val nearest : t -> Point.t -> elt option
   (** [nearest tree point] returns the elements nearest to {i point} *)
+  val nearest : t -> Point.t -> elt option
 
-  val map : (elt -> elt) -> t -> t
   (** [map f tree] applies {i f} to every element of {i tree} *)
+  val map : (elt -> elt) -> t -> t
 
-  val iter : (elt -> unit) -> t -> unit
   (** [iter f tree] Applies {i f} to every element in {i tree}. It is assumed {i f} is side-effectful *)
+  val iter : (elt -> unit) -> t -> unit
 
-  val filter : (elt -> bool) -> t -> t
   (** [filter f tree] Applies {i f} to every element in {i tree}, retaining elements for which {i f} returns true *)
+  val filter : (elt -> bool) -> t -> t
 
-  val filter_map : (elt -> elt option) -> t -> t
   (** [filter_map f tree] Applies {i f} to every element in {i tree}, retaining elements for which {i f} returns {i Some elt} *)
+  val filter_map : (elt -> elt option) -> t -> t
 
-  val mem : t -> elt -> bool
   (** [mem tree element] Tests whether {i elt} is a member of the set defined by {i tree}'s leaves *)
+  val mem : t -> elt -> bool
 end
 
 module type Octree = sig

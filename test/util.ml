@@ -22,6 +22,6 @@ module Num = struct
 
   let mul = Float.( * )
   let div = Float.( / )
-  let succ n = Float.add 1. n
-  let pred n = Float.sub n 1.
+  let succ n = Float.add 1. n [@@inline]
+  let pred n = Float.sub n 1. [@@inline]
 end

@@ -2,20 +2,15 @@ open OUnit2
 open Core
 open Util
 
-module O =
-  Ack.Octree.Make
-    (Num)
-    (struct
-      type n = Num.t
-      type t = n * n * n
+module Elt = struct
+  type n = Num.t
+  type t = n * n * n
 
-      let equal : t -> t -> bool =
-        Tuple3.equal ~eq1:Num.equal ~eq2:Num.equal ~eq3:Num.equal
-      ;;
+  let equal : t -> t -> bool = Tuple3.equal ~eq1:Num.equal ~eq2:Num.equal ~eq3:Num.equal
+  let position = Fun.id
+end
 
-      let position = Fun.id
-    end)
-
+module O = Ack.Octree.Make (Num) (Elt)
 module Box3 = O.Box
 module Point3 = O.Point
 

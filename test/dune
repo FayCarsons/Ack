@@ -1,4 +1,4 @@
 (test
  (name main)
- (modules main)
+ (modules kdtree quadtree octree main util)
  (libraries ounit ack core))

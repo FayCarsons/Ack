@@ -2,7 +2,7 @@
 include Tree_intf
 module MakePoint = Point.Make
 module MakeRect = Box.Make
-open Core
+open! Core
 
 let ( >> ) f g x = g @@ f x
 let ( >>| ) = List.( >>| )
@@ -78,13 +78,13 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
     { t with tree = insert' tree }
 
   let size t =
-    let rec aux n = function
+    let rec size' n = function
       | Node (_, ns) ->
-          n + (Iter.of_array ns |> Iter.map (aux 0) |> Iter.fold ( + ) 0)
+          n + (Iter.of_array ns |> Iter.map (size' 0) |> Iter.fold ( + ) 0)
       | Leaf (_, es) -> List.length es
       | Empty _ -> 0
     in
-    aux 0 t.tree
+    size' 0 t.tree
 
   let depth t =
     let rec depth' = function

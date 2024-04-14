@@ -154,6 +154,7 @@ module type Point3D = sig
   (** Point-scalar division *)
 end
 
+(** N-dimension Axis Aligned Bounding Box (AABB) *)
 module type Box = sig
   type t
   type n
@@ -161,12 +162,21 @@ module type Box = sig
 
   val equal : t -> t -> bool
   val box : point -> point -> t
+
   val midpoint : t -> point
+  (** [midpoint box] Returns the point between {i min} and {i max} *)
+
   val split : t -> t array
+  (** [split box] Splits a box into equal sub-boxes based on dimensionality. I.E. 2d box -> 4 sub-boxes, 3d -> 8, etc *)
+
   val contains : t -> point -> bool
+  (** [contains box point] Tests whether {i point} lies within the domain of {i box} *)
+
   val intersects : t -> t -> bool
+  (**  [intesects box1 box2] Tests whether {i box1} intersects {i box2} *)
 end
 
+(** Generic 2d element *)
 module type Element2D = sig
   type t
   type n
@@ -175,6 +185,7 @@ module type Element2D = sig
   val equal : t -> t -> bool
 end
 
+(** Generic 3d element *)
 module type Element3D = sig
   type t
   type n
@@ -183,6 +194,7 @@ module type Element3D = sig
   val position : t -> n * n * n
 end
 
+(** Generic N-dimensional element *)
 module type ElementN = sig
   type t
 
@@ -190,14 +202,21 @@ module type ElementN = sig
   val position : t -> float array
 end
 
+(** A Quadtree, requires a {i Num} module and an {i Element2D} defining its coordinate system and the elements in its leaves *)
 module type Quadtree = sig
   type n
+  (** Number type for coordinate system *)
 
   module Point : Point with type n = n
   module Box : Box with type n = n and type point = Point.t
 
   type elt
+  (** Element type *)
+
   type t
+  (** The tree: {[ type t = { capacity : int; tree : tree } ]} where {i capacity} 
+      is the maximum number of elements in any given leaf node and {i tree} is the 
+      recursive variant defining the quadtree. *)
 
   val empty : Box.t -> int -> t
   (** [empty domain capacity] constructs an empty tree with leaf capacity {capacity} and spatial domain from {i domain.min} to {i domain.max} *)
@@ -224,15 +243,22 @@ module type Quadtree = sig
   (** [range domain tree] returns all elements with a position between {i domain.min} and {i domain.max} *)
 
   val nearest : t -> Point.t -> elt option
-  (** [nearest tree point] returns the elements nearest to {i point}*)
+  (** [nearest tree point] returns the elements nearest to {i point} *)
 
   val map : (elt -> elt) -> t -> t
   (** [map f tree] applies {i f} to every element of {i tree} *)
 
   val iter : (elt -> unit) -> t -> unit
+  (** [iter f tree] Applies {i f} to every element in {i tree}. It is assumed {i f} is side-effectful *)
+
   val filter : (elt -> bool) -> t -> t
+  (** [filter f tree] Applies {i f} to every element in {i tree}, retaining elements for which {i f} returns true *)
+
   val filter_map : (elt -> elt option) -> t -> t
+  (** [filter_map f tree] Applies {i f} to every element in {i tree}, retaining elements for which {i f} returns {i Some elt} *)
+
   val mem : t -> elt -> bool
+  (** [mem tree element] Tests whether {i elt} is a member of the set defined by {i tree}'s leaves *)
 end
 
 module type Octree = sig

@@ -1,11 +1,15 @@
 open OUnit2
+open Core
 module Quadtree = Ack.Quadtree
 
 module Num = struct
   include Int
 
+  let add = Int.( + )
+  let sub = Int.( - )
+  let mul = Int.( * )
+  let div = Int.( / )
   let sqrt n = float_of_int n |> sqrt
-  let ( <> ) a b = Int.compare a b != 0
 end
 
 module Q =
@@ -15,6 +19,8 @@ module Q =
       type n = Num.t
       type t = n * n
 
+      (* TODO: Figure out how to handle comparison more robustly *)
+      let compare = Core.Poly.compare
       let position = Fun.id
     end)
 
@@ -25,13 +31,13 @@ let test_domain_max = 100
 let test_domain = Box.box (Point.splat 0) (Point.splat test_domain_max)
 (* Test box/domain, in range 0-100 *)
 
-let rand_es n max = List.init n (fun _ -> (Random.int max, Random.int max))
+let rand_es n max = List.init n ~f:(fun _ -> (Random.int max, Random.int max))
 (* Random elt generator *)
 
 let tuple_splat n = (n, n)
 (* Elt from int *)
 
-let is_even n = n mod 2 == 0
+let is_even n = n mod 2 = 0
 let ( >> ) f g x = g @@ f x
 (* Fn composition *)
 
@@ -39,10 +45,13 @@ let assert' b = assert b
 (* Wrap assert for easier use *)
 
 let time label fn =
-  let start' = Unix.gettimeofday () in
+  let open Time_float in
+  let start' = now () in
   fn ();
-  let end' = Unix.gettimeofday () in
-  Printf.printf "%s took %f seconds\n" label (end' -. start')
+  let end' = now () in
+  Printf.printf "%s took %f seconds\n" label
+    (diff end' start' |> Time_float.Span.to_sec)
+(* Times the fn passed and prints its duration w/ label *)
 
 (* Tests whether two boxes intersect *)
 let test_intersects _ =
@@ -103,7 +112,7 @@ let test_find _ =
   let es = rand_es 1_000 not_target_range in
   let target_elt = (95, 95) in
   let t = Q.load (Q.empty test_domain 32) @@ (target_elt :: es) in
-  assert' @@ Option.is_some @@ Q.find (fun elt -> elt == target_elt) t
+  assert' @@ Option.is_some @@ Q.find (fun elt -> Poly.equal elt target_elt) t
 
 (* Test collecting all elements within a range, from within a 1k elt tree *)
 let test_range _ =
@@ -121,32 +130,32 @@ let test_nearest _ =
   let target, nearest = ((90, 90), (80, 80)) in
   let empty = Q.empty test_domain 32 in
   let t = Q.load empty @@ (target :: nearest :: es) in
-  let nearest' = Option.get @@ Q.nearest t @@ Point.splat (fst target) in
+  let nearest' = Option.value_exn @@ Q.nearest t @@ Point.splat (fst target) in
   assert_equal nearest nearest'
 
 (* Test mapping over elts in 1k elt tree *)
 let test_map _ =
-  let es = List.init 1_000 tuple_splat in
+  let es = List.init 1_000 ~f:tuple_splat in
   let t = Q.load (Q.empty test_domain 32) es in
   let t = Q.map (fun (x, _) -> tuple_splat @@ succ x) t in
   Q.iter (fun (x, _) -> assert (1 <= x && x <= 1_000)) t
 
 (* Test iterating over elts *)
 let test_iter _ =
-  let es = List.init 1_000 tuple_splat in
+  let es = List.init 1_000 ~f:tuple_splat in
   let t = Q.load (Q.empty test_domain 32) es in
   Q.iter (fst >> (fun i -> 0 <= i && i <= 1_000) >> assert') t
 
 (* Test filtering elts *)
 let test_filter _ =
-  let es = List.init 1_000 tuple_splat in
+  let es = List.init 1_000 ~f:tuple_splat in
   let t = Q.load (Q.empty test_domain 32) es in
   let t = Q.filter (fst >> is_even) t in
   Q.iter (fst >> is_even >> assert') t
 
 (* Test filter_map-ing elts *)
 let test_filter_map _ =
-  let es = List.init 1_000 tuple_splat in
+  let es = List.init 1_000 ~f:tuple_splat in
   let t = Q.load (Q.empty test_domain 32) es in
   let t =
     Q.filter_map
@@ -189,6 +198,7 @@ module O =
       type n = Num.t
       type t = n * n * n
 
+      let compare = Core.Poly.compare
       let position = Fun.id
     end)
 
@@ -199,7 +209,7 @@ let test_domain = Box3.box (Point3.splat 0) (Point3.splat test_domain_max)
 let tuple_splat n = (n, n, n)
 
 let rand_es n max =
-  List.init n (fun _ -> (Random.int max, Random.int max, Random.int max))
+  List.init n ~f:(fun _ -> (Random.int max, Random.int max, Random.int max))
 
 let fst (a, _, _) = a
 
@@ -214,7 +224,7 @@ let test_contains _ =
 let test_load_size _ =
   let es = rand_es 1_000 100 in
   let t = O.load (O.empty test_domain 32) es in
-  assert (O.size t == 1_000)
+  assert (Int.equal (O.size t) 1_000)
 
 let test_load_many _ =
   let op () =
@@ -262,7 +272,7 @@ let test_find _ =
   let es = rand_es 1_000 not_target_range in
   let target_elt = tuple_splat 95 in
   let t = O.load (O.empty test_domain 32) @@ (target_elt :: es) in
-  assert' @@ Option.is_some @@ O.find (fun elt -> elt == target_elt) t
+  assert' @@ Option.is_some @@ O.find (fun elt -> Poly.equal elt target_elt) t
 
 (* Test collecting all elements within a range, from within a 1k elt tree *)
 let test_range _ =
@@ -278,32 +288,34 @@ let test_nearest _ =
   let es = rand_es 1_000 50 in
   let target, nearest = (tuple_splat 90, tuple_splat 80) in
   let t = O.load (O.empty test_domain 32) @@ (target :: nearest :: es) in
-  let nearest' = Option.get @@ O.nearest t @@ Point3.splat @@ fst target in
+  let nearest' =
+    fst target |> Point3.splat |> O.nearest t |> Option.value_exn
+  in
   assert_equal nearest nearest'
 
 (* Test mapping over elts in 1k elt tree *)
 let test_map _ =
-  let es = List.init 1_000 tuple_splat in
+  let es = List.init 1_000 ~f:tuple_splat in
   let t = O.load (O.empty test_domain 32) es in
   let t = O.map (fun (x, _, _) -> tuple_splat @@ succ x) t in
   O.iter (fun (x, _, _) -> assert' (1 <= x && x <= 1_000)) t
 
 (* Test iterating over elts *)
 let test_iter _ =
-  let es = List.init 1_000 tuple_splat in
+  let es = List.init 1_000 ~f:tuple_splat in
   let t = O.load (O.empty test_domain 32) es in
   O.iter (fun (x, _, _) -> assert (0 <= x && x <= 1_000)) t
 
 (* Test filtering elts *)
 let test_filter _ =
-  let es = List.init 1_000 tuple_splat in
+  let es = List.init 1_000 ~f:tuple_splat in
   let t = O.load (O.empty test_domain 32) es in
   let t = O.filter (fst >> is_even) t in
   O.iter (fst >> is_even >> assert') t
 
 (* Test filter_map-ing elts *)
 let test_filter_map _ =
-  let es = List.init 1_000 tuple_splat in
+  let es = List.init 1_000 ~f:tuple_splat in
   let t = O.load (O.empty test_domain 32) es in
   let t =
     O.filter_map
@@ -337,21 +349,20 @@ let _ = run_test_tt_main ot_suite
 module Elt = struct
   type t = { name : string; position : float array }
 
+  let compare = Core.Poly.compare
   let position t = t.position
   let elt name position = { name; position }
   let _name { name; _ } = name
 end
 
 module K = Ack.KDTree (Elt)
-module FA = Float.Array
 
-let random_str () =
-  Seq.init (succ @@ Random.int 10) char_of_int |> String.of_seq
+let random_str () = String.init (succ @@ Random.int 10) ~f:char_of_int
 
 let rand_elt max' =
-  Elt.elt (random_str ()) (Array.init 2 @@ fun _ -> Random.float max')
+  Elt.elt (random_str ()) (Array.init 2 ~f:(fun _ -> Random.float max'))
 
-let rand_es n max' = List.init n (fun _ -> rand_elt max')
+let rand_es n max' = List.init n ~f:(fun _ -> rand_elt max')
 
 let test_empty _ =
   let t = K.empty 1 2 in

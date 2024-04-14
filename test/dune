@@ -1,4 +1,4 @@
 (test
  (name main)
  (modules main)
- (libraries ounit ack))
+ (libraries ounit ack core))

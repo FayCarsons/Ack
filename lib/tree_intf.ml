@@ -77,18 +77,21 @@ module type Element2D = sig
   type n
 
   val position : t -> n * n
+  val compare : t -> t -> int
 end
 
 module type Element3D = sig
   type t
   type n
 
+  val compare : t -> t -> int
   val position : t -> n * n * n
 end
 
 module type ElementN = sig
   type t
 
+  val compare : t -> t -> int
   val position : t -> float array
 end
 
@@ -102,15 +105,35 @@ module type Quadtree = sig
   type t
 
   val empty : Box.t -> int -> t
+  (** [empty domain capacity] constructs an empty tree with leaf capacity {capacity} and spatial domain from {i domain.min} to {i domain.max} *)
+
   val load : t -> elt list -> t
+  (** [load empty_tree elements] extends an empty tree, distributing the elements amongst its leaves *)
+
   val insert : t -> elt -> t
+  (** [insert t elt] insert a single element into a tree *)
+
   val size : t -> int
+  (** [size tree] returns the number of elements in  the tree *)
+
   val depth : t -> int
+  (** [depth tree] returns the depth of the tree *)
+
   val remove : t -> elt -> t
+  (** [remove tree elt] removes any elements that have {b deep equality} with elt from the tree *)
+
   val find : (elt -> bool) -> t -> elt option
+  (** [find search_fn t] returns the first element for which (search_fn elt) returns true, or none *)
+
   val range : Box.t -> t -> elt list
+  (** [range domain tree] returns all elements with a position between {i domain.min} and {i domain.max} *)
+
   val nearest : t -> Point.t -> elt option
+  (** [nearest tree point] returns the elements nearest to {i point}*)
+
   val map : (elt -> elt) -> t -> t
+  (** [map f tree] applies {i f} to every element of {i tree} *)
+
   val iter : (elt -> unit) -> t -> unit
   val filter : (elt -> bool) -> t -> t
   val filter_map : (elt -> elt option) -> t -> t

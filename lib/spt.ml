@@ -5,6 +5,7 @@ module MakeRect = Box.Make
 open Core
 
 let ( >> ) f g x = g @@ f x
+let ( >>| ) = List.( >>| )
 
 module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
   Quadtree with type elt = E.t and type n = Num.t = struct
@@ -128,7 +129,7 @@ module Quadtree (Num : Scalar) (E : Element2D with type n = Num.t) :
       | Node (box, ns) ->
           Array.map_inplace ~f:map' ns;
           Node (box, ns)
-      | Leaf (box, es) -> Leaf (box, List.map ~f es)
+      | Leaf (box, es) -> Leaf (box, es >>| f)
       | t -> t
     in
     { t with tree = map' t.tree }

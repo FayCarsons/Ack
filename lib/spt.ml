@@ -43,16 +43,15 @@ module Quadtree = struct
         in
         let place_elt elt =
           let pos = position elt in
-          try
-            let idx, (box, elts) =
-              Array.find_mapi_exn
-                ~f:(fun i ((box, _) as leaf) ->
-                  if Box.contains box pos then Some (i, leaf) else None)
-                leaves
-            in
-            leaves.(idx) <- box, elt :: elts
-          with
-          | _ -> ()
+          let target =
+            Array.find_mapi
+              ~f:(fun i ((box, _) as leaf) ->
+                if Box.contains box pos then Some (i, leaf) else None)
+              leaves
+          in
+          Option.iter
+            ~f:(fun (idx, (box, elts)) -> leaves.(idx) <- box, elt :: elts)
+            target
         in
         List.iter ~f:place_elt es;
         box, Array.map ~f:leaf leaves
@@ -274,16 +273,15 @@ module Octree = struct
         in
         let place_elt elt =
           let pos = position elt in
-          try
-            let idx, (box, elts) =
-              Array.find_mapi_exn
-                ~f:(fun i ((box, _) as leaf) ->
-                  if Box.contains box pos then Some (i, leaf) else None)
-                leaves
-            in
-            leaves.(idx) <- box, elt :: elts
-          with
-          | _ -> ()
+          let target =
+            Array.find_mapi
+              ~f:(fun i ((box, _) as leaf) ->
+                if Box.contains box pos then Some (i, leaf) else None)
+              leaves
+          in
+          Option.iter
+            ~f:(fun (idx, (box, elts)) -> leaves.(idx) <- box, elt :: elts)
+            target
         in
         List.iter ~f:place_elt es;
         box, Array.map ~f:leaf leaves

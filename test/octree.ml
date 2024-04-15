@@ -6,8 +6,8 @@ module Elt = struct
   type n = Num.t
   type t = n * n * n
 
-  let equal : t -> t -> bool = Tuple3.equal ~eq1:Num.equal ~eq2:Num.equal ~eq3:Num.equal
-  let position = Fun.id
+  let equal = Tuple3.equal ~eq1:Num.equal ~eq2:Num.equal ~eq3:Num.equal
+  let position = Fn.id
 end
 
 module O = Ack.Octree.Make (Num) (Elt)

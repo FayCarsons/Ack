@@ -6,8 +6,8 @@ module Elt = struct
   type n = Num.t
   type t = n * n
 
-  let equal : t -> t -> bool = Tuple2.equal ~eq1:Num.equal ~eq2:Num.equal
-  let position = Fun.id
+  let equal = Tuple2.equal ~eq1:Num.equal ~eq2:Num.equal
+  let position = Fn.id
 end
 
 module Q = Ack.Quadtree.Make (Num) (Elt)

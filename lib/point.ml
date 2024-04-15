@@ -3,7 +3,11 @@ open Core
 
 module Make (Num : Scalar) : Point with type n = Num.t = struct
   type n = (Num.t[@unboxed])
-  type t = { x : n; y : n }
+
+  type t =
+    { x : n
+    ; y : n
+    }
 
   let equal p1 p2 = Num.equal p1.x p2.x && Num.equal p1.y p2.y
   let two = Num.succ Num.one
@@ -17,11 +21,11 @@ module Make (Num : Scalar) : Point with type n = Num.t = struct
     f x;
     f y;
     ()
+  ;;
 
   let distance p1 p2 =
-    map2 Num.sub p1 p2
-    |> map (fun n -> Num.mul n n)
-    |> fold Num.add Num.zero |> Num.sqrt
+    map2 Num.sub p1 p2 |> map (fun n -> Num.mul n n) |> fold Num.add Num.zero |> Num.sqrt
+  ;;
 
   (* Point -> Point arithmetic *)
   let ( +~ ) = map2 Num.add
@@ -39,31 +43,31 @@ end
 
 module Make3D (Num : Scalar) : Point3D with type n = Num.t = struct
   type n = (Num.t[@unboxed])
-  type t = { x : n; y : n; z : n }
 
-  let equal p1 p2 =
-    Num.equal p1.x p2.x && Num.equal p1.y p2.y && Num.equal p1.z p2.z
+  type t =
+    { x : n
+    ; y : n
+    ; z : n
+    }
 
+  let equal p1 p2 = Num.equal p1.x p2.x && Num.equal p1.y p2.y && Num.equal p1.z p2.z
   let two = Num.succ Num.one
   let point x y z = { x; y; z }
   let splat n = point n n n
   let map f { x; y; z } = point (f x) (f y) (f z)
-
-  let map2 f { x; y; z } { x = x'; y = y'; z = z' } =
-    point (f x x') (f y y') (f z z')
-
+  let map2 f { x; y; z } { x = x'; y = y'; z = z' } = point (f x x') (f y y') (f z z')
   let fold f acc { x; y; z } = f (f (f acc x) y) z
 
   let distance p1 p2 =
-    map2 Num.sub p1 p2
-    |> map (fun n -> Num.mul n n)
-    |> fold Num.add Num.zero |> Num.sqrt
+    map2 Num.sub p1 p2 |> map (fun n -> Num.mul n n) |> fold Num.add Num.zero |> Num.sqrt
+  ;;
 
   let iter f { x; y; z } =
     f x;
     f y;
     f z;
     ()
+  ;;
 
   let ( +~ ) = map2 Num.add
   let ( -~ ) = map2 Num.sub

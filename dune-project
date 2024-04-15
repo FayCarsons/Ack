@@ -22,3 +22,8 @@
  (depends ocaml dune ounit iter core)
  (tags
   (topics quadtree octree kd-tree spatial spatial-partitioning)))
+
+(package 
+  (name viz)
+  (synopsis "Ack visualization")
+  (depends ack core joy))

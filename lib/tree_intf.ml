@@ -167,6 +167,8 @@ module type Box = sig
 
   val equal : t -> t -> bool
   val box : point -> point -> t
+  val get_min : t -> point
+  val get_max : t -> point
 
   (** [midpoint box] Returns the point between {i min} and {i max} *)
   val midpoint : t -> point
@@ -221,7 +223,15 @@ module type Quadtree = sig
   (** The tree: {[ type t = { capacity : int; tree : tree } ]} where {i capacity} 
       is the maximum number of elements in any given leaf node and {i tree} is the 
       recursive variant defining the quadtree. *)
-  type t
+  type t =
+    { capacity : int
+    ; tree : tree
+    }
+
+  and tree =
+    | Node of (Box.t * tree array)
+    | Leaf of (Box.t * elt list)
+    | Empty of Box.t
 
   (** [empty domain capacity] constructs an empty tree with leaf capacity {capacity} and spatial domain from {i domain.min} to {i domain.max} *)
   val empty : Box.t -> int -> t

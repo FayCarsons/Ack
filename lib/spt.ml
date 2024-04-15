@@ -5,7 +5,8 @@ module MakeRect = Box.Make
 open! Core
 
 let ( >> ) f g x = g @@ f x
-let ( >>| ) = List.( >>| )
+
+exception TreeEmpty
 
 module Quadtree = struct
   module Make (Num : Scalar) (E : Element2D with type n = Num.t) :
@@ -16,10 +17,7 @@ module Quadtree = struct
     type n = Num.t
     type elt = E.t
 
-    let position (elt : E.t) : Point.t =
-      let x, y = E.position elt in
-      Point.point x y
-    ;;
+    let position = E.position >> Tuple2.uncurry Point.point
 
     type t =
       { capacity : int
@@ -57,6 +55,17 @@ module Quadtree = struct
       | Empty bounds -> { t with tree = load' (bounds, elements) }
       | _ -> failwith "Load can only take an empty tree!"
     ;;
+
+    let dump { tree; _ } =
+      let rec dump' = function
+        | Node (_, children) -> Array.to_list children |> List.concat_map ~f:dump'
+        | Leaf (_, elts) -> elts
+        | Empty _ -> raise TreeEmpty
+      in
+      dump' tree
+    ;;
+
+    let rebuild domain ({ capacity; _ } as t) = dump t |> load (empty domain capacity)
 
     let insert ({ capacity; tree } as t) elt =
       let pos = position elt in
@@ -132,7 +141,7 @@ module Quadtree = struct
         | Node (box, ns) ->
           Array.map_inplace ~f:map' ns;
           Node (box, ns)
-        | Leaf (box, es) -> Leaf (box, es >>| f)
+        | Leaf (box, es) -> Leaf (box, List.map ~f es)
         | t -> t
       in
       { t with tree = map' t.tree }
@@ -264,6 +273,17 @@ module Octree = struct
       | Empty bounds -> { t with tree = load' (bounds, elements) }
       | _ -> failwith "Load can only take an empty tree!"
     ;;
+
+    let dump { tree; _ } =
+      let rec dump' = function
+        | Node (_, children) -> Array.to_list children |> List.concat_map ~f:dump'
+        | Leaf (_, elts) -> elts
+        | Empty _ -> raise TreeEmpty
+      in
+      dump' tree
+    ;;
+
+    let rebuild domain ({ capacity; _ } as t) = dump t |> load (empty domain capacity)
 
     let insert ({ capacity; tree } as t) elt =
       let pos = position elt in

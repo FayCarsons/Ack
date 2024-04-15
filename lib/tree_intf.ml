@@ -239,6 +239,12 @@ module type Quadtree = sig
   (** [load empty_tree elements] extends an empty tree, distributing the elements amongst its leaves *)
   val load : t -> elt list -> t
 
+  (** [dump tree] Return all elts in tree as a list *)
+  val dump : t -> elt list
+
+  (** [rebuild domain tree] dump elements from {i tree} and create a new tree. Should only be called on degenerate or small trees due to be expensive *)
+  val rebuild : Box.t -> t -> t
+
   (** [insert t elt] insert a single element into a tree *)
   val insert : t -> elt -> t
 
@@ -287,6 +293,13 @@ module type Octree = sig
 
   val empty : Box.t -> int -> t
   val load : t -> elt list -> t
+
+  (** [dump tree] Return all elts in tree as a list *)
+  val dump : t -> elt list
+
+  (** [rebuild domain tree] dump elements from {i tree} and create a new tree. Should only be called on degenerate or small trees due to be expensive *)
+  val rebuild : Box.t -> t -> t
+
   val insert : t -> elt -> t
   val size : t -> int
   val depth : t -> int

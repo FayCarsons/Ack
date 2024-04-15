@@ -6,7 +6,11 @@ open! Core
 
 let ( >> ) f g x = g @@ f x
 
+(** Attempted operation that requires an empty tree, on a populated tree *)
 exception TreeEmpty
+
+(** Attempted operation on that requires a populated tree, on an empty tree *)
+exception Populated
 
 module Quadtree = struct
   module Make (Num : Scalar) (E : Element2D with type n = Num.t) :
@@ -29,31 +33,44 @@ module Quadtree = struct
       | Leaf of (Box.t * E.t list)
       | Empty of Box.t
 
+    let leaf leaf = Leaf leaf
     let empty domain capacity = { capacity; tree = Empty domain }
 
     let load ({ capacity; tree } as t) elements =
-      let partition children elts =
-        let partition' (leaves, elts_seq) box =
-          let belong, dont_belong =
-            List.partition_tf ~f:(position >> Box.contains box) elts_seq
-          in
-          let leaf = box, belong in
-          leaf :: leaves, dont_belong
+      let partition (box, es) =
+        let leaves : (Box.t * elt list) array =
+          Box.split box |> Fn.flip Array.zip_exn (Array.create ~len:4 [])
         in
-        let leaves, _ = Array.fold ~f:partition' ~init:([], elts) children in
-        Array.of_list leaves
+        let place_elt elt =
+          let pos = position elt in
+          try
+            let idx, (box, elts) =
+              Array.find_mapi_exn
+                ~f:(fun i ((box, _) as leaf) ->
+                  if Box.contains box pos then Some (i, leaf) else None)
+                leaves
+            in
+            leaves.(idx) <- box, elt :: elts
+          with
+          | _ -> ()
+        in
+        List.iter ~f:place_elt es;
+        box, Array.map ~f:leaf leaves
       in
-      let rec load' (box', es') =
-        if List.length es' >= capacity
-        then (
-          let quarters = Box.split box' in
-          let children' = partition quarters es' |> Array.map ~f:load' in
-          Node (box', children'))
-        else Leaf (box', es')
+      let rec load' = function
+        | Leaf (box, es) when List.length es >= capacity ->
+          let domain, leaves = partition (box, es) in
+          Array.map_inplace ~f:load' leaves;
+          Node (domain, leaves)
+        | Empty domain ->
+          let domain, leaves = partition (domain, elements) in
+          Array.map_inplace ~f:load' leaves;
+          Node (domain, leaves)
+        | node -> node
       in
       match tree with
-      | Empty bounds -> { t with tree = load' (bounds, elements) }
-      | _ -> failwith "Load can only take an empty tree!"
+      | Empty _ as empty -> { t with tree = load' empty }
+      | _ -> raise Populated
     ;;
 
     let dump { tree; _ } =
@@ -243,35 +260,48 @@ module Octree = struct
       }
 
     and tree =
-      | Node of Box.t * tree array
-      | Leaf of Box.t * elt list
+      | Node of (Box.t * tree array)
+      | Leaf of (Box.t * elt list)
       | Empty of Box.t
 
+    let leaf leaf = Leaf leaf
     let empty domain capacity = { capacity; tree = Empty domain }
 
     let load ({ capacity; tree } as t) elements =
-      let partition children elts =
-        let partition' (leaves, elts_seq) box =
-          let belong, dont_belong =
-            List.partition_tf ~f:(position >> Box.contains box) elts_seq
-          in
-          let leaf = box, belong in
-          leaf :: leaves, dont_belong
+      let partition (box, es) =
+        let leaves : (Box.t * elt list) array =
+          Box.split box |> Fn.flip Array.zip_exn (Array.create ~len:8 [])
         in
-        let leaves, _ = Array.fold ~f:partition' ~init:([], elts) children in
-        Array.of_list leaves
+        let place_elt elt =
+          let pos = position elt in
+          try
+            let idx, (box, elts) =
+              Array.find_mapi_exn
+                ~f:(fun i ((box, _) as leaf) ->
+                  if Box.contains box pos then Some (i, leaf) else None)
+                leaves
+            in
+            leaves.(idx) <- box, elt :: elts
+          with
+          | _ -> ()
+        in
+        List.iter ~f:place_elt es;
+        box, Array.map ~f:leaf leaves
       in
-      let rec load' (box', es') =
-        if List.length es' >= capacity
-        then (
-          let quarters = Box.split box' in
-          let children' = partition quarters es' |> Array.map ~f:load' in
-          Node (box', children'))
-        else Leaf (box', es')
+      let rec load' = function
+        | Leaf (box, es) when List.length es >= capacity ->
+          let domain, leaves = partition (box, es) in
+          Array.map_inplace ~f:load' leaves;
+          Node (domain, leaves)
+        | Empty domain ->
+          let domain, leaves = partition (domain, elements) in
+          Array.map_inplace ~f:load' leaves;
+          Node (domain, leaves)
+        | node -> node
       in
       match tree with
-      | Empty bounds -> { t with tree = load' (bounds, elements) }
-      | _ -> failwith "Load can only take an empty tree!"
+      | Empty _ as empty -> { t with tree = load' empty }
+      | _ -> raise Populated
     ;;
 
     let dump { tree; _ } =

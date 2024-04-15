@@ -2,7 +2,7 @@ include Tree_intf
 open Core
 
 module Make (Num : Scalar) : Point with type n = Num.t = struct
-  type n = (Num.t[@unboxed])
+  type n = Num.t
 
   type t =
     { x : n
@@ -42,7 +42,7 @@ module Make (Num : Scalar) : Point with type n = Num.t = struct
 end
 
 module Make3D (Num : Scalar) : Point3D with type n = Num.t = struct
-  type n = (Num.t[@unboxed])
+  type n = Num.t
 
   type t =
     { x : n

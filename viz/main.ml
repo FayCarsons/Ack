@@ -23,11 +23,12 @@ module Q =
 open Q
 
 let to_rect (box : Box.t) =
-  let open Point in
-  let { x; y } = Box.midpoint box in
-  let x, y = Tuple2.map ~f:Num.to_int (x, y) in
-  let { x = minx; y = miny } = Box.get_min box in
-  let { x = maxx; y = maxy } = Box.get_max box in
+  let midpoint = Box.midpoint box in
+  let x, y = Tuple2.map ~f:Num.to_int (Point.x midpoint, Point.y midpoint) in
+  let min = Box.get_min box in
+  let minx, miny = Point.x min, Point.y min in
+  let max = Box.get_max box in
+  let maxx, maxy = Point.x max, Point.y max in
   let w = maxx -. minx |> Num.to_int in
   let h = maxy -. miny |> Num.to_int in
   Joy.(rectangle ~c:(point x y) w h)

@@ -35,9 +35,9 @@ module Make (Num : Scalar) (Point : Point with type n = Num.t) :
     [| nw; ne; se; sw |]
   ;;
 
-  let contains { min; max } ({ x; y } : Point.t) =
+  let contains { min; max } (pt : Point.t) =
     let open Point in
-    in_range (min.x, max.x) x && in_range (min.y, max.y) y
+    in_range (min.x, max.x) pt.x && in_range (min.y, max.y) pt.y
   ;;
 
   let intersects a b =

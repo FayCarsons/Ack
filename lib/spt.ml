@@ -14,7 +14,7 @@ exception Populated
 
 module Quadtree = struct
   module Make (Num : Scalar) (E : Element2D with type n = Num.t) :
-    Quadtree with type elt = E.t and type n = Num.t = struct
+    SPT with type elt = E.t and type n = Num.t = struct
     module Point : Point with type n = Num.t = MakePoint (Num)
     module Box : Box with type n = Num.t and type point = Point.t = MakeRect (Num) (Point)
 
@@ -240,7 +240,7 @@ module MakeCube = Box.Make3D
 
 module Octree = struct
   module Make (Num : Scalar) (E : Element3D with type n = Num.t) :
-    Octree with type elt = E.t and type n = Num.t = struct
+    SPT with type elt = E.t and type n = Num.t = struct
     type n = Num.t
 
     module Point : Point3D with type n = Num.t = MakePoint3D (Num)

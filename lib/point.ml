@@ -9,6 +9,9 @@ module Make (Num : Scalar) : Point with type n = Num.t = struct
     ; y : n
     }
 
+  let x p = p.x
+  let y p = p.y
+  let z _ = failwith "Called z in 2d Point module!"
   let equal p1 p2 = Num.equal p1.x p2.x && Num.equal p1.y p2.y
   let two = Num.succ Num.one
   let point x y = { x; y }
@@ -50,6 +53,9 @@ module Make3D (Num : Scalar) : Point3D with type n = Num.t = struct
     ; z : n
     }
 
+  let x p = p.x
+  let y p = p.y
+  let z p = p.z
   let equal p1 p2 = Num.equal p1.x p2.x && Num.equal p1.y p2.y && Num.equal p1.z p2.z
   let two = Num.succ Num.one
   let point x y z = { x; y; z }

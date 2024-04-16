@@ -23,6 +23,9 @@ module type Point = sig
     ; y : n
     }
 
+  val x : t -> n
+  val y : t -> n
+  val z : t -> n
   val equal : t -> t -> bool
   val two : n
   val point : n -> n -> t
@@ -93,6 +96,9 @@ module type Point3D = sig
     ; z : n
     }
 
+  val x : t -> n
+  val y : t -> n
+  val z : t -> n
   val equal : t -> t -> bool
   val two : n
   val point : n -> n -> n -> t
@@ -210,11 +216,19 @@ module type ElementN = sig
 end
 
 (** A Quadtree, requires a {i Num} module and an {i Element2D} defining its coordinate system and the elements in its leaves *)
-module type Quadtree = sig
+module type SPT = sig
   (** Number type for coordinate system *)
   type n
 
-  module Point : Point with type n = n
+  module Point : sig
+    type t
+
+    val splat : n -> t
+    val x : t -> n
+    val y : t -> n
+    val z : t -> n
+  end
+
   module Box : Box with type n = n and type point = Point.t
 
   (** Element type *)
@@ -279,38 +293,6 @@ module type Quadtree = sig
   val filter_map : (elt -> elt option) -> t -> t
 
   (** [mem tree element] Tests whether {i elt} is a member of the set defined by {i tree}'s leaves *)
-  val mem : t -> elt -> bool
-end
-
-module type Octree = sig
-  type n
-
-  module Point : Point3D with type n = n
-  module Box : Box with type n = n and type point = Point.t
-
-  type elt
-  type t
-
-  val empty : Box.t -> int -> t
-  val load : t -> elt list -> t
-
-  (** [dump tree] Return all elts in tree as a list *)
-  val dump : t -> elt list
-
-  (** [rebuild domain tree] dump elements from {i tree} and create a new tree. Should only be called on degenerate or small trees due to be expensive *)
-  val rebuild : Box.t -> t -> t
-
-  val insert : t -> elt -> t
-  val size : t -> int
-  val depth : t -> int
-  val remove : t -> elt -> t
-  val find : (elt -> bool) -> t -> elt option
-  val range : Box.t -> t -> elt list
-  val nearest : t -> Point.t -> elt option
-  val map : (elt -> elt) -> t -> t
-  val iter : (elt -> unit) -> t -> unit
-  val filter : (elt -> bool) -> t -> t
-  val filter_map : (elt -> elt option) -> t -> t
   val mem : t -> elt -> bool
 end
 

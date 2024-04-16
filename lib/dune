@@ -1,4 +1,6 @@
 (library
  (name ack)
  (public_name ack)
+ (preprocess
+  (pps ppx_jane))
  (libraries iter core))

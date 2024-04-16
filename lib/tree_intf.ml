@@ -215,7 +215,7 @@ module type ElementN = sig
   val position : t -> float array
 end
 
-(** A Quadtree, requires a {i Num} module and an {i Element2D} defining its coordinate system and the elements in its leaves *)
+(** A Spatial Partition Tree, I.E. a Quad or Oct-tree *)
 module type SPT = sig
   (** Number type for coordinate system *)
   type n

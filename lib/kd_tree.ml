@@ -39,7 +39,7 @@ module KDTree = struct
       split' idx lst []
     ;;
 
-    let load { capacity; dimensionality; tree = _empty } points =
+    let load { capacity; dimensionality; _ } points =
       let rec load' dimension = function
         | [] -> Empty
         | points when List.length points <= capacity -> Leaf points
@@ -51,6 +51,19 @@ module KDTree = struct
           Node (node, load' next_dim left, load' next_dim right)
       in
       { capacity; dimensionality; tree = load' 0 points }
+    ;;
+
+    let dump { tree; _ } =
+      let rec dump' = function
+        | Node (_, left, right) -> dump' left @ dump' right
+        | Leaf es -> es
+        | Empty -> []
+      in
+      dump' tree
+    ;;
+
+    let rebuild ({ capacity; dimensionality; _ } as t) =
+      dump t |> load (empty capacity dimensionality)
     ;;
 
     let insert ({ capacity; dimensionality; tree } as t) elt =
@@ -102,8 +115,8 @@ module KDTree = struct
             | None -> Some (median, distance query point)
             | _ -> best
           in
-          let curr_best = nearest' (succ depth) curr_best closer in
-          Option.bind curr_best ~f:(fun curr ->
+          nearest' (succ depth) curr_best closer
+          |> Option.bind ~f:(fun curr ->
             if (query_d -. point_d) **. 2. < snd curr
             then nearest' (succ depth) (Some curr) further
             else Some curr)

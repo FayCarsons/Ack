@@ -6,17 +6,19 @@ open! Core
 
 let ( >> ) f g x = g @@ f x
 
-(** Attempted operation that requires an empty tree, on a populated tree *)
-exception TreeEmpty
-
-(** Attempted operation on that requires a populated tree, on an empty tree *)
-exception Populated
-
 module Quadtree = struct
+  (** A quadtree built with a coordinate system of type Num.t that stores elements of type Elt.t *)
+
   module Make (Num : Scalar) (E : Element2D with type n = Num.t) :
     SPT with type elt = E.t and type n = Num.t = struct
     module Point : Point with type n = Num.t = MakePoint (Num)
     module Box : Box with type n = Num.t and type point = Point.t = MakeRect (Num) (Point)
+
+    (** Attempted operation that requires an empty tree, on a populated tree *)
+    exception TreeEmpty
+
+    (** Attempted operation that requires a populated tree, on an empty tree *)
+    exception Populated
 
     type n = Num.t
     type elt = E.t
@@ -36,26 +38,28 @@ module Quadtree = struct
     let leaf leaf = Leaf leaf
     let empty domain capacity = { capacity; tree = Empty domain }
 
-    let load ({ capacity; tree } as t) elements =
-      let partition (box, es) =
-        let leaves : (Box.t * elt list) array =
-          Box.split box |> Fn.flip Array.zip_exn (Array.create ~len:4 [])
-        in
-        let place_elt elt =
-          let pos = position elt in
-          let target =
-            Array.find_mapi
-              ~f:(fun i ((box, _) as leaf) ->
-                if Box.contains box pos then Some (i, leaf) else None)
-              leaves
-          in
-          Option.iter
-            ~f:(fun (idx, (box, elts)) -> leaves.(idx) <- box, elt :: elts)
-            target
-        in
-        List.iter ~f:place_elt es;
-        box, Array.map ~f:leaf leaves
+    let partition (box, es) =
+      let leaves : (Box.t * elt list) array =
+        Box.split box |> Fn.flip Array.zip_exn (Array.create ~len:4 [])
       in
+      let place_elt elt =
+        let pos = position elt in
+        let target =
+          Array.find_mapi
+            ~f:(fun i ((box, _) as leaf) ->
+              if Box.contains box pos then Some (i, leaf) else None)
+            leaves
+        in
+        Option.iter ~f:(fun (idx, (box, elts)) -> leaves.(idx) <- box, elt :: elts) target
+      in
+      List.iter ~f:place_elt es;
+      box, Array.map ~f:leaf leaves
+    ;;
+
+    (* TODO : this should be able to bulk load into a non-empty tree?
+       Unsure what my thought was here - Fay 8/7/24 *)
+
+    let load ({ capacity; tree } as t) elements =
       let rec load' = function
         | Leaf (box, es) when List.length es >= capacity ->
           let domain, leaves = partition (box, es) in
@@ -245,6 +249,12 @@ module Octree = struct
 
     module Point : Point3D with type n = Num.t = MakePoint3D (Num)
     module Box : Box with type n = Num.t and type point = Point.t = MakeCube (Num) (Point)
+
+    (** Attempted operation that requires an empty tree, on a populated tree *)
+    exception TreeEmpty
+
+    (** Attempted operation that requires a populated tree, on an empty tree *)
+    exception Populated
 
     type elt = E.t
 

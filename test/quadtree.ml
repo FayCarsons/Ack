@@ -143,8 +143,8 @@ let test_filter_map _ =
   let t =
     Q.filter_map
       (function
-       | pair when is_even @@ fst pair -> Some pair
-       | _ -> None)
+        | pair when is_even @@ fst pair -> Some pair
+        | _ -> None)
       t
   in
   Q.iter (fst >> is_even >> assert') t

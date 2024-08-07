@@ -1,4 +1,4 @@
-(** Scalar type used for building Point.t, Box.t, etc. This should (probably) be the same type your coordinate system uses *)
+(** Scalar type used for building Point.t, Box.t, etc. This should be the same number type your coordinate system uses *)
 module type Scalar = sig
   type t
 
@@ -14,7 +14,7 @@ module type Scalar = sig
   val ( <> ) : t -> t -> bool
 end
 
-(** 2D Point *)
+(** [Point] a point in 2-dimensional space *)
 module type Point = sig
   type n
 
@@ -33,21 +33,24 @@ module type Point = sig
   (** [splat n] Creates a point with all fields being n *)
   val splat : n -> t
 
-  (** [map f point] applies {i f} to fields of {i point} *)
+  (** [map f point] applies {b f} to fields of {b point} *)
   val map : (n -> n) -> t -> t
 
-  (** [map2 f pt1 pt2] Applies {i f} to the fields of {i pt1} and {i pt2} pairwise. It is equivalent to: {[
-      let x = f pt1.x pt2.x and y = f pt1.y pt2.y in { x; y }
+  (** [map2 f point_one point_two] Applies {b f} to the fields of {b pt1} and {b pt2} pairwise. It is equivalent to:
+      {[
+        let x = f point_one.x point_two.x
+        and y = f point_one.y point_two.y in
+        { x; y }
       ]} *)
   val map2 : (n -> n -> n) -> t -> t -> t
 
-  (** [fold f init point] Threads an accumulator through the application of {i f} to the fields of {i point} *)
+  (** [fold f init point] Threads an accumulator through the application of {b f} to the fields of {b point} *)
   val fold : ('acc -> n -> 'acc) -> 'acc -> t -> 'acc
 
-  (** [distance pt1 pt2] Returns the distance (always a {i float}) beween two points *)
+  (** [distance pt1 pt2] Returns the distance (always a {b float}) beween two points *)
   val distance : t -> t -> float
 
-  (** [iter f poin] Applies {i f} to each field of {i point}. It is assumed that {i f} is side-effectful *)
+  (** [iter f poin] Applies {b f} to each field of {b point}. It is assumed that {b f} is side-effectful *)
   val iter : (n -> unit) -> t -> unit
 
   (** Point-point arithmetic. These are equivalent to
@@ -87,6 +90,7 @@ module type Point = sig
   val ( /! ) : t -> n -> t
 end
 
+(** [Point3D] a point in 3-dimensional space *)
 module type Point3D = sig
   type n
 
@@ -106,10 +110,10 @@ module type Point3D = sig
   (** [splat n] Creates a point with all fields being n *)
   val splat : n -> t
 
-  (** [map f point] applies {i f} to fields of {i point} *)
+  (** [map f point] applies {b f} to fields of {b point} *)
   val map : (n -> n) -> t -> t
 
-  (** [map2 f pt1 pt2] Applies {i f} to the fields of {i pt1} and {i pt2} pairwise. It is equivalent to:
+  (** [map2 f pt1 pt2] Applies {b f} to the fields of {b pt1} and {b pt2} pairwise. It is equivalent to:
       {[
         let x = f pt1.x pt2.x
         and y = f pt1.y pt2.y
@@ -118,13 +122,13 @@ module type Point3D = sig
       ]} *)
   val map2 : (n -> n -> n) -> t -> t -> t
 
-  (** [fold f init point] Threads an accumulator through the application of {i f} to the fields of {i point} *)
+  (** [fold f init point] Threads an accumulator through the application of {b f} to the fields of {b point} *)
   val fold : ('acc -> n -> 'acc) -> 'acc -> t -> 'acc
 
-  (** [distance pt1 pt2] Returns the distance (always a {i float}) beween two points *)
+  (** [distance pt1 pt2] Returns the distance (always a {b float}) beween two points *)
   val distance : t -> t -> float
 
-  (** [iter f poin] Applies {i f} to each field of {i point}. It is assumed that {i f} is side-effectful *)
+  (** [iter f poin] Applies {b f} to each field of {b point}. It is assumed that {b f} is side-effectful *)
   val iter : (n -> unit) -> t -> unit
 
   (** Point-point arithmetic. These are equivalent to
@@ -176,22 +180,24 @@ module type Box = sig
   val get_min : t -> point
   val get_max : t -> point
 
-  (** [midpoint box] Returns the point between {i min} and {i max} *)
+  (** [midpoint box] Returns the point between {b min} and {b max} *)
   val midpoint : t -> point
 
   (** [split box] Splits a box into equal sub-boxes based on dimensionality. I.E. 2d box -> 4 sub-boxes, 3d -> 8, etc *)
   val split : t -> t array
 
-  (** [contains box point] Tests whether {i point} lies within the domain of {i box} *)
+  (** [contains box point] Tests whether {b point} lies within the domain of {b box} *)
   val contains : t -> point -> bool
 
-  (**  [intesects box1 box2] Tests whether {i box1} intersects {i box2} *)
+  (**  [intesects box1 box2] Tests whether {b box1} intersects {b box2} *)
   val intersects : t -> t -> bool
 end
 
 (** Generic 2d element *)
 module type Element2D = sig
+  (** An elemnent with a position in 2-dimensional space *)
   type t
+
   type n
 
   val position : t -> n * n
@@ -200,7 +206,9 @@ end
 
 (** Generic 3d element *)
 module type Element3D = sig
+  (** An element in 3-dimensional space *)
   type t
+
   type n
 
   val equal : t -> t -> bool
@@ -209,6 +217,7 @@ end
 
 (** Generic N-dimensional element *)
 module type ElementN = sig
+  (** An element in N-dimensional space *)
   type t
 
   val equal : t -> t -> bool
@@ -219,6 +228,9 @@ end
 module type SPT = sig
   (** Number type for coordinate system *)
   type n
+
+  exception Populated
+  exception TreeEmpty
 
   module Point : sig
     type t
@@ -234,9 +246,8 @@ module type SPT = sig
   (** Element type *)
   type elt
 
-  (** The tree: {[ type t = { capacity : int; tree : tree } ]} where {i capacity} 
-      is the maximum number of elements in any given leaf node and {i tree} is the 
-      recursive variant defining the quadtree. *)
+  (** A spatial partitioning tree (Quadtree, Octree) that operates within a generic coordinate system
+      maintains the invariant that no leaf should hold more than {b capacity} elements *)
   type t =
     { capacity : int
     ; tree : tree
@@ -247,25 +258,28 @@ module type SPT = sig
     | Leaf of (Box.t * elt list)
     | Empty of Box.t
 
-  (** [empty domain capacity] constructs an empty tree with leaf capacity {capacity} and spatial domain from {i domain.min} to {i domain.max} *)
+  (** [empty domain capacity] constructs an empty tree with leaf capacity {b capacity} and
+      spatial domain from {b domain.min} to {b domain.max} *)
   val empty : Box.t -> int -> t
 
-  (** [load empty_tree elements] extends an empty tree, distributing the elements amongst its leaves *)
+  (** [load empty_tree elements] bulk loads elements into an empty tree
+      @raise Populated if the tree is not empty *)
   val load : t -> elt list -> t
 
   (** [dump tree] Return all elts in tree as a list *)
   val dump : t -> elt list
 
-  (** [rebuild domain tree] dump elements from {i tree} and create a new tree. Should only be called on degenerate or small trees due to be expensive *)
+  (** [rebuild domain tree] dump elements from {b tree} and create a new tree.
+      Expensive, calls should only be made when tree is small or suspected to be degenerate *)
   val rebuild : Box.t -> t -> t
 
   (** [insert t elt] insert a single element into a tree *)
   val insert : t -> elt -> t
 
-  (** [size tree] returns the number of elements in  the tree *)
+  (** [size tree] counts the elements in the tree *)
   val size : t -> int
 
-  (** [depth tree] returns the depth of the tree *)
+  (** [depth tree] computes the depth of the tree *)
   val depth : t -> int
 
   (** [remove tree elt] removes any elements that have {b deep equality} with elt from the tree *)
@@ -274,36 +288,54 @@ module type SPT = sig
   (** [find search_fn t] returns the first element for which (search_fn elt) returns true, or none *)
   val find : (elt -> bool) -> t -> elt option
 
-  (** [range domain tree] returns all elements with a position between {i domain.min} and {i domain.max} *)
+  (** [range domain tree] returns all elements with a position between {b domain.min} and {b domain.max} *)
   val range : Box.t -> t -> elt list
 
-  (** [nearest tree point] returns the elements nearest to {i point} *)
+  (** [nearest tree point] returns the element nearest to {b point} *)
   val nearest : t -> Point.t -> elt option
 
-  (** [map f tree] applies {i f} to every element of {i tree} *)
+  (** [map f tree] applies {b f} to every element of {b tree} *)
   val map : (elt -> elt) -> t -> t
 
-  (** [iter f tree] Applies {i f} to every element in {i tree}. It is assumed {i f} is side-effectful *)
+  (** [iter f tree] Applies {b f} to every element in {b tree}. It is assumed {b f} is side-effectful *)
   val iter : (elt -> unit) -> t -> unit
 
-  (** [filter f tree] Applies {i f} to every element in {i tree}, retaining elements for which {i f} returns true *)
+  (** [filter f tree] Applies {b f} to every element in {b tree}, retaining elements for which {b f} returns true *)
   val filter : (elt -> bool) -> t -> t
 
-  (** [filter_map f tree] Applies {i f} to every element in {i tree}, retaining elements for which {i f} returns {i Some elt} *)
+  (** [filter_map f tree] Applies {b f} to every element in {b tree}, retaining elements for which {b f} returns {b Some elt} *)
   val filter_map : (elt -> elt option) -> t -> t
 
-  (** [mem tree element] Tests whether {i elt} is a member of the set defined by {i tree}'s leaves *)
+  (** [mem tree element] Tests whether {b elt} is a member of the set defined by {b tree}'s leaves *)
   val mem : t -> elt -> bool
 end
 
 module type KDTree = sig
+  (** An N-dimensional kd-tree *)
   type t
+
+  (** The elements contained within this kd-tree *)
   type elt
 
+  (** [empty capacity dimensionality] creates an empty n-dimensional tree where
+      N = dimensionality and maximum elements contained in a leaf = {b capacity} *)
   val empty : int -> int -> t
+
+  (** [load tree elements] bulk load list {b elements} into {b tree} *)
   val load : t -> elt list -> t
+
+  (** [insert tree element] insert a single element into {b tree} *)
   val insert : t -> elt -> t
+
+  (** [nearest tree point]
+      @return the element of {b tree} nearest in space to {b point} *)
   val nearest : t -> float array -> elt option
+
+  (** [depth tree] computes the depth of {b tree} *)
   val depth : t -> int
+
+  (** [size tree] counts the elements in {b tree} *)
   val size : t -> int
+
+  val rebuild : t -> t
 end
